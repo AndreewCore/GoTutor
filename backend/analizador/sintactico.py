@@ -19,13 +19,15 @@ Para que p.lineno(n) funcione, el lexer debe actualizar t.lexer.lineno.
 """
 
 import sys
+from functools import cache
 
 import ply.yacc as yacc
 
 from .lexico import construir_lexer, tokens  # noqa: F401 (yacc lee `tokens` de este módulo)
 from .modelos import ErrorAnalisis, Nodo, columna
 
-# Los errores de la ejecución actual. analizar_sintactico los reinicia.
+# Los errores de la ejecución actual. analizar_sintactico los reinicia; es
+# seguro ser global porque servicio.py atiende un análisis a la vez.
 _errores: list[ErrorAnalisis] = []
 
 # ---------------------------------------------------------------------------
@@ -84,8 +86,17 @@ def analizar_sintactico(codigo: str) -> tuple[Nodo | None, list[ErrorAnalisis]]:
         raise NotImplementedError("sintactico.py aún no define reglas")
 
     _errores.clear()
-    # write_tables/debug en False: no queremos parsetab.py ni parser.out
-    # regenerándose en el repo cada vez que la API recibe una petición.
-    parser = yacc.yacc(module=sys.modules[__name__], write_tables=False, debug=False)
-    ast = parser.parse(codigo, lexer=construir_lexer(), tracking=True)
+    ast = _parser().parse(codigo, lexer=construir_lexer(), tracking=True)
     return ast, list(_errores)
+
+
+@cache
+def _parser():
+    """Construye el parser una sola vez por proceso.
+
+    Generar las tablas LALR de una gramática de Go tarda bastante más que
+    parsear un programa, así que no conviene repetirlo en cada petición; el
+    recargador de Flask reinicia el proceso cuando cambia este archivo.
+    write_tables/debug en False: así no aparecen parsetab.py ni parser.out en el repo.
+    """
+    return yacc.yacc(module=sys.modules[__name__], write_tables=False, debug=False)
