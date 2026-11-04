@@ -10,6 +10,7 @@ Estados de cada fase:
 
 from __future__ import annotations
 
+import threading
 import traceback
 
 import bitacora
@@ -20,6 +21,13 @@ from analizador.sintactico import analizar_sintactico
 
 FASES = ("lex", "syn", "sem")
 ARCHIVO_DE_FASE = {"lex": "lexico.py", "syn": "sintactico.py", "sem": "semantico.py"}
+
+# Flask atiende cada petición en un hilo, pero los analizadores guardan estado
+# a nivel de módulo (`_errores` en sintactico.py, el parser de PLY, lo que el
+# grupo agregue en semantico.py). Sin este candado, dos análisis simultáneos
+# —p. ej. dos pestañas en la presentación— mezclarían sus errores. Un análisis
+# dura milisegundos, así que atenderlos en fila no se nota.
+_candado = threading.Lock()
 
 
 def _ejecutar(fase: str, funcion, *args):
@@ -47,7 +55,16 @@ def _ejecutar(fase: str, funcion, *args):
 
 
 def analizar(codigo: str, archivo: str = "main.go", escribir_logs: bool = True) -> dict:
-    """Corre léxico → sintáctico → semántico sobre `codigo` y devuelve el JSON de respuesta."""
+    """Corre léxico → sintáctico → semántico sobre `codigo` y devuelve el JSON de respuesta.
+
+    Atiende un análisis a la vez (ver `_candado`).
+    """
+    with _candado:
+        return _analizar(codigo, archivo, escribir_logs)
+
+
+def _analizar(codigo: str, archivo: str, escribir_logs: bool) -> dict:
+    """Implementación de `analizar`; supone que ya se tiene `_candado`."""
     fases = {f: {"estado": "pendiente", "errores": []} for f in FASES}
     tokens = ast = simbolos = None
 
