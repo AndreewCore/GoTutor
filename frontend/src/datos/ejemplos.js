@@ -65,7 +65,7 @@ func main() {
 }`
   },
   {
-    id:"sintaxis", name:"Paréntesis y punto y coma", level:"intermedio", fase:"syn", linea:9,
+    id:"sintaxis", name:"Paréntesis y punto y coma", level:"intermedio", fase:"syn", linea:8,
     challenge:"Todos los tokens son válidos, pero su orden no sigue la gramática de Go en las líneas 8 y 10.",
     code:
 `package main
