@@ -96,6 +96,9 @@ sintactico-<usuarioGit>-<dd-mm-aaaa>-<HHhMM>.txt
 semantico-<usuarioGit>-<dd-mm-aaaa>-<HHhMM>.txt
 ```
 
+Si hay varios análisis en el mismo minuto, se agregan al final del mismo
+archivo, separados por una línea de `=`, en vez de sobrescribirlo.
+
 El usuario se toma de `git config user.name`. Para usar otro nombre:
 `GOTUTOR_USUARIO_GIT=MiUsuario python app.py`.
 
