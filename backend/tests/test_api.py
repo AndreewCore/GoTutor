@@ -8,7 +8,7 @@ from unittest import mock
 
 import servicio
 from analizador.modelos import ErrorAnalisis, Nodo, Simbolo, Token
-from app import app
+from app import MAX_CODIGO, app
 
 CODIGO = 'package main\n\nfunc main() {\n}\n'
 
@@ -76,6 +76,35 @@ class PruebasApi(unittest.TestCase):
             r = self.cliente.post("/api/analizar", json={"codigo": "a\r\nb", "archivo": "x.go"})
         self.assertEqual(r.status_code, 200)
         m.assert_called_once_with("a\nb", "x.go")
+
+    def test_retorno_de_carro_suelto(self):
+        # Los editores del Mac clásico guardan solo \r; también rompería las líneas de PLY.
+        with mock.patch.object(servicio, "analizar", return_value={}) as m:
+            self.cliente.post("/api/analizar", json={"codigo": "a\rb\r\nc"})
+        m.assert_called_once_with("a\nb\nc", "main.go")
+
+    def test_cuerpo_que_no_es_json(self):
+        r = self.cliente.post("/api/analizar", data="codigo=x", content_type="text/plain")
+        self.assertEqual(r.status_code, 400)
+
+    def test_codigo_que_no_es_texto(self):
+        self.assertEqual(self.cliente.post("/api/analizar", json={"codigo": 5}).status_code, 400)
+
+    def test_codigo_demasiado_grande(self):
+        with mock.patch.object(servicio, "analizar") as m:
+            r = self.cliente.post("/api/analizar", json={"codigo": "x" * (MAX_CODIGO + 1)})
+        self.assertEqual(r.status_code, 413)
+        m.assert_not_called()
+
+    def test_codigo_en_el_limite(self):
+        with mock.patch.object(servicio, "analizar", return_value={}):
+            r = self.cliente.post("/api/analizar", json={"codigo": "x" * MAX_CODIGO})
+        self.assertEqual(r.status_code, 200)
+
+    def test_nombre_de_archivo_recortado(self):
+        with mock.patch.object(servicio, "analizar", return_value={}) as m:
+            self.cliente.post("/api/analizar", json={"codigo": "", "archivo": "a" * 500})
+        self.assertEqual(len(m.call_args.args[1]), 120)
 
 
 if __name__ == "__main__":
