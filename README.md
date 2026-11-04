@@ -140,3 +140,10 @@ Para conectarlo: `pnpm add firebase`, crear el proyecto en Firebase (plan Spark,
 gratis), activar Google en Authentication y Cloud Firestore, copiar
 `frontend/.env.example` a `frontend/.env.local` con la config, e implementar
 las funciones marcadas como pendientes.
+
+## Integración continua
+
+GitHub Actions (`.github/workflows/ci.yml`) corre las pruebas del backend en
+Python 3.11 y 3.14, y `pnpm build` del frontend, en cada PR y en cada push a
+`dev`, `staging` y `main`. También falla si las pruebas dejan archivos sueltos
+en el repo (logs, `parsetab.py`).
