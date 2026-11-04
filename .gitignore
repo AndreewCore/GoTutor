@@ -1,0 +1,17 @@
+notas_lexico.py
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+backend/analizador/parsetab.py
+backend/analizador/parser.out
+
+# Frontend
+node_modules/
+frontend/dist/
+.env.local
+.env.*.local
+
+# Asistente
+CLAUDE.md
