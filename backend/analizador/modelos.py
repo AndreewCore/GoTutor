@@ -61,9 +61,15 @@ class Simbolo:
 
 
 def columna(codigo: str, lexpos: int) -> int:
-    """Convierte la posición absoluta de PLY (`t.lexpos`) en columna 1-based."""
+    """Convierte la posición absoluta de PLY (`t.lexpos`) en columna 1-based.
+
+    Un tabulador cuenta como una columna, igual que en el compilador de Go.
+    """
     inicio_linea = codigo.rfind("\n", 0, lexpos) + 1
-    return lexpos - inicio_linea + 1
+    # Se cuenta en unidades UTF-16 porque así mide el editor de la interfaz
+    # (String.length en JS); con un emoji en la línea, contar caracteres de
+    # Python dejaría el subrayado del error corrido una posición.
+    return len(codigo[inicio_linea:lexpos].encode("utf-16-le")) // 2 + 1
 
 
 def a_dict(obj) -> dict:

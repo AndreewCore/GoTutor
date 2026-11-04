@@ -53,7 +53,14 @@ Para tener todo en un solo proceso (por ejemplo, en la presentación), ejecuta
 `pnpm build` en `frontend/` y luego `python app.py`. Flask sirve el build en
 http://localhost:8000.
 
-Pruebas de la integración: `cd backend && python -m unittest`.
+Pruebas: `cd backend && python -m unittest -v`.
+
+- `test_api.py`, `test_contrato.py`: API, orquestación y campos que lee la interfaz.
+- `test_integracion_ply.py`: el esqueleto con PLY real y una gramática mínima.
+  Se omite sola en cuanto `lexico.py`/`sintactico.py` tengan reglas.
+- `test_ejemplos.py`: cada ejemplo de la vista Ejemplos debe fallar en la fase
+  y línea que declara (necesita Node para leer `ejemplos.js`). Los casos cuya
+  fase aún no está implementada salen como *skipped*: esa lista es lo que falta.
 
 ## Para el grupo: qué hay que implementar
 
@@ -72,7 +79,9 @@ Reglas:
 - Los errores **no se imprimen**: se agregan a la lista (`t.lexer.errores` en el
   léxico y `_errores` en el sintáctico). Si no, no aparecen en la interfaz.
 - Las líneas y columnas empiezan en 1. Para la columna usen
-  `columna(codigo, t.lexpos)` de `modelos.py`.
+  `columna(codigo, t.lexpos)` de `modelos.py`: un tabulador cuenta como una
+  columna (como en Go) y la cuenta coincide con la del editor de la interfaz,
+  incluso con emojis.
 - El parser construye objetos `Nodo(tipo, dato, linea, hijos)`, no tuplas. Si un
   nodo tiene un error, márquenlo con `error="syn"` o `error="sem"` para que salga
   en rojo.
