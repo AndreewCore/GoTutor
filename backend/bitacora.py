@@ -2,6 +2,9 @@
 
 Nombre: <fase>-<usuarioGit>-<dd-mm-aaaa>-<HHhMM>.txt
   p. ej. lexico-AndreewCore-02-11-2026-14h05.txt
+
+Si hay varios análisis en el mismo minuto, quedan todos en ese archivo,
+uno tras otro y separados por una línea de '='.
 """
 
 from __future__ import annotations
@@ -15,6 +18,7 @@ from pathlib import Path
 
 CARPETA = Path(__file__).parent / "logs"
 NOMBRE = {"lex": "lexico", "syn": "sintactico", "sem": "semantico"}
+SEPARADOR = "=" * 72
 
 
 @cache
@@ -76,7 +80,13 @@ def escribir(archivo: str, fases: dict, tokens, ast, simbolos) -> list[str]:
     rutas = []
     for fase, cuerpo in contenido.items():
         ruta = CARPETA / f"{NOMBRE[fase]}-{usuario_git()}-{sello}.txt"
-        texto = cabecera + cuerpo + ["", "ERRORES"] + _errores(fases[fase]["errores"])
-        ruta.write_text("\n".join(texto) + "\n", encoding="utf-8")
+        texto = "\n".join(cabecera + cuerpo + ["", "ERRORES"] + _errores(fases[fase]["errores"])) + "\n"
+        # El nombre solo tiene precisión de minutos (formato pedido para la
+        # entrega): un segundo análisis en el mismo minuto se agrega al final
+        # en vez de borrar el anterior.
+        if ruta.exists():
+            texto = f"\n{SEPARADOR}\n\n" + texto
+        with open(ruta, "a", encoding="utf-8") as f:
+            f.write(texto)
         rutas.append(f"logs/{ruta.name}")
     return rutas
