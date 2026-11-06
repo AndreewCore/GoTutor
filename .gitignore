@@ -15,3 +15,6 @@ frontend/dist/
 
 # Asistente
 CLAUDE.md
+
+# Vite (caché de dependencias)
+frontend/.vite/

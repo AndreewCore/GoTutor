@@ -12,6 +12,7 @@ from __future__ import annotations
 import os
 import re
 import subprocess
+import unicodedata
 from datetime import datetime
 from functools import cache
 from pathlib import Path
@@ -38,7 +39,10 @@ def usuario_git() -> str:
 
 def _limpiar(texto: str) -> str:
     """Deja solo caracteres seguros para un nombre de archivo."""
-    return re.sub(r"[^A-Za-z0-9_.-]+", "", texto.replace(" ", ""))
+    # Se quitan las tildes en vez de borrar la letra: "García" debe quedar
+    # "Garcia", no "Garca".
+    sin_tildes = unicodedata.normalize("NFKD", texto).encode("ascii", "ignore").decode()
+    return re.sub(r"[^A-Za-z0-9_.-]+", "", sin_tildes.replace(" ", ""))
 
 
 def _errores(errores) -> list[str]:

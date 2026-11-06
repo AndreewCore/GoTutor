@@ -6,6 +6,7 @@ los errores, con explicaciones de cada fase.
 
 ```
 GoTutor/
+├── algoritmos/               algoritmo1.go, 2, 3: programa de prueba de cada integrante
 ├── backend/                  Python 3.11+ · Flask · PLY
 │   ├── analizador/
 │   │   ├── lexico.py         ← GRUPO: análisis léxico (ply.lex)
@@ -15,6 +16,7 @@ GoTutor/
 │   ├── servicio.py           ejecuta las 3 fases en orden y arma el JSON
 │   ├── bitacora.py           escribe los logs de cada fase en logs/
 │   ├── app.py                API Flask (POST /api/analizar)
+│   ├── probar_lexico.py      corre solo el léxico sobre un .go y deja su log
 │   ├── logs/                 logs generados en cada análisis
 │   └── tests/                pruebas de la integración
 └── frontend/                 Vite + JavaScript sin framework (pnpm)
@@ -62,6 +64,56 @@ Pruebas: `cd backend && python -m unittest -v`.
   y línea que declara (necesita Node para leer `ejemplos.js`). Los casos cuya
   fase aún no está implementada salen como *skipped*: esa lista es lo que falta.
 
+## Para el grupo: avance 1 (analizador léxico)
+
+Entrega: link del repositorio hasta el **08/11/2026 23h55**. Quien no tenga
+commits en el historial no recibe nota.
+
+| Integrante | Usuario | Reglas léxicas | Algoritmo |
+|---|---|---|---|
+| Paúl Rodríguez | `AndreewCore` | Delimitadores, Comentarios | `algoritmos/algoritmo1.go` |
+| Danilo García | `Danilogb18` | Variables, Tipos de datos | `algoritmos/algoritmo2.go` |
+| Samuel Echeverría | `SamuelEcheverria` | Operadores, Palabras reservadas | `algoritmos/algoritmo3.go` |
+
+Los nombres de los tokens son los del documento del proyecto (`ENTERO`,
+`ASIGNA_CORTA`, `LLAVE_IZQ`…).
+
+**1. Rama.** Cada uno trabaja en su rama, que sale de `feature/lexico`, y abre
+el PR hacia `feature/lexico` (no hacia `dev`):
+
+```bash
+git fetch
+git switch -c feature/lexico-<usuario> origin/feature/lexico
+```
+
+Cuando los tres aportes estén en `feature/lexico`, esa rama se integra a `dev`
+con un PR. La CI solo corre en los PR hacia `dev`, `staging` y `main`, porque
+`test_ejemplos.py` necesita los tokens de los tres para pasar.
+
+**2. Código.** En `backend/analizador/lexico.py` cada integrante escribe solo
+dentro de su bloque `INICIO aporte` / `FIN aporte`. Sus tokens van en su lista
+`tokens_<usuario>` y sus palabras reservadas en `reservadas_<usuario>`; al final
+del archivo se juntan solos en `tokens` y `reservadas`. Así nadie edita las
+mismas líneas y los merges no chocan.
+
+**3. Algoritmo.** Escribir en su `algoritmos/algoritmoN.go` un programa Go con la
+mayoría de tokens del subconjunto.
+
+**4. Log.** Probar el lexer con su algoritmo; cada prueba genera un log en
+`backend/logs/` con todos los tokens y errores:
+
+```bash
+cd backend
+python probar_lexico.py ../algoritmos/algoritmo2.go -u Danilogb18
+# -> logs/lexico-Danilogb18-06-11-2026-14h32.txt
+```
+
+Usen `-u` con su usuario de GitHub: sin esa opción el nombre del log se toma
+de `git config user.name`, que suele ser el nombre completo.
+
+**5. Commit.** Incluir los logs en el commit (`git add backend/logs/`): deben
+quedar en el historial.
+
 ## Para el grupo: qué hay que implementar
 
 Solo se editan los tres archivos de `backend/analizador/`. Cada uno trae
@@ -86,11 +138,6 @@ Reglas:
   nodo tiene un error, márquenlo con `error="syn"` o `error="sem"` para que salga
   en rojo.
 - El semántico solo corre si el léxico y el sintáctico terminan sin errores.
-- Punto y coma automático: si llenan `fin_de_sentencia` en `lexico.py`, el
-  lexer agrega un `SEMICOLON` al final de cada línea cuyo último token cierra
-  una sentencia, como hace Go (`puntoycoma.py`). Así la gramática separa
-  sentencias con `SEMICOLON` y no tiene que manejar saltos de línea. Estos
-  `;` llegan con valor `"\n"`: en `p_error` muéstrenlos como "salto de línea".
 - `mensaje` dice qué está mal y `sugerencia` cómo arreglarlo. La interfaz es para
   estudiantes, así que conviene escribirlos claros y en español.
 - Si su código lanza una excepción, la API no se cae: la fase sale como
@@ -113,8 +160,9 @@ semantico-<usuarioGit>-<dd-mm-aaaa>-<HHhMM>.txt
 Si hay varios análisis en el mismo minuto, se agregan al final del mismo
 archivo, separados por una línea de `=`, en vez de sobrescribirlo.
 
-El usuario se toma de `git config user.name`. Para usar otro nombre:
-`GOTUTOR_USUARIO_GIT=MiUsuario python app.py`.
+El usuario se toma de `git config user.name` (sin tildes ni espacios). Para
+usar otro nombre: `GOTUTOR_USUARIO_GIT=MiUsuario python app.py`, o
+`-u MiUsuario` en `probar_lexico.py`.
 
 ## Contrato de la API
 
@@ -162,5 +210,6 @@ las funciones marcadas como pendientes.
 
 GitHub Actions (`.github/workflows/ci.yml`) corre las pruebas del backend en
 Python 3.11 y 3.14, y `pnpm build` del frontend, en cada PR y en cada push a
-`dev`, `staging` y `main`. También falla si las pruebas dejan archivos sueltos
+`dev`, `staging` y `main`. Los PR hacia ramas de fase como `feature/lexico`
+no la corren. También falla si las pruebas dejan archivos sueltos
 en el repo (logs, `parsetab.py`).
