@@ -1,0 +1,63 @@
+# Corre en los PR y en los push a las ramas de integración, para que nadie
+# rompa el esqueleto (API, contrato con la interfaz, build del frontend).
+# Los PR de cada integrante hacia una rama de fase (p. ej. feature/lexico) no
+# la corren: test_ejemplos.py necesita los aportes de los tres para pasar, así
+# que se valida cuando la rama de fase entra a dev.
+name: CI
+
+on:
+  pull_request:
+    branches: [dev, staging, main]
+  push:
+    branches: [dev, staging, main]
+
+jobs:
+  backend:
+    name: Backend (Python ${{ matrix.python }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # 3.11 es la mínima que pide el README; 3.14 es la que usa el grupo.
+        python: ["3.11", "3.14"]
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+      # test_ejemplos.py lee frontend/src/datos/ejemplos.js con Node.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: pip install -r requirements.txt
+      - run: python -m unittest -v
+      # Las pruebas no deben dejar logs, parsetab.py ni parser.out en el repo.
+      - name: El árbol de trabajo queda limpio
+        run: |
+          git status --porcelain --untracked-files=all
+          test -z "$(git status --porcelain --untracked-files=all)"
+
+  frontend:
+    name: Frontend (build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      # Misma versión mayor con la que se generó pnpm-lock.yaml.
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
