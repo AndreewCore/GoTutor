@@ -29,11 +29,6 @@ from .puntoycoma import LexerConPuntoYComa
 # aparecen en el archivo; las de string (t_X = r'...') se ordenan solas de la
 # más larga a la más corta. Las palabras reservadas no llevan regla propia:
 # se resuelven dentro de t_ID con el diccionario `reservadas`.
-#
-# Punto y coma automático (ver puntoycoma.py): Go agrega un ';' al final de la
-# línea si el último token es uno de `fin_de_sentencia`. Déjenlo vacío para no
-# insertar nada. Si lo usan, `tokens` debe incluir "SEMICOLON".
-fin_de_sentencia: set[str] = set()
 
 
 # ===== INICIO aporte: Paúl Rodríguez (AndreewCore) =====
@@ -41,6 +36,12 @@ fin_de_sentencia: set[str] = set()
 # También aquí: t_ignore, saltos de línea (t.lexer.lineno) y t_error.
 tokens_AndreewCore: list[str] = []
 reservadas_AndreewCore: dict[str, str] = {}
+
+# Punto y coma automático (Delimitadores, ver puntoycoma.py): Go agrega un ';'
+# al final de la línea si el último token es uno de estos tipos. Vacío = no se
+# inserta nada. Si se usa, `tokens` debe incluir "SEMICOLON", que es el tipo
+# que puntoycoma.py le da al ';' insertado.
+fin_de_sentencia: set[str] = set()
 
 # TODO(AndreewCore)
 
