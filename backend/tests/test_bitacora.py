@@ -63,6 +63,10 @@ class PruebasBitacora(unittest.TestCase):
         rutas = bitacora.escribir("main.go", _fases(), [], None, None)
         self.assertNotIn(bitacora.SEPARADOR, self.leer(rutas[0]))
 
+    def test_usuario_sin_tildes(self):
+        self.assertEqual(bitacora._limpiar("Samuel Echeverría"), "SamuelEcheverria")
+        self.assertEqual(bitacora._limpiar("ñandú/../x"), "nandu..x")
+
 
 if __name__ == "__main__":
     unittest.main()

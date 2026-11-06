@@ -1,9 +1,13 @@
-# Corre en cada PR y en cada push a las ramas de integración, para que nadie
+# Corre en los PR y en los push a las ramas de integración, para que nadie
 # rompa el esqueleto (API, contrato con la interfaz, build del frontend).
+# Los PR de cada integrante hacia una rama de fase (p. ej. feature/lexico) no
+# la corren: test_ejemplos.py necesita los aportes de los tres para pasar, así
+# que se valida cuando la rama de fase entra a dev.
 name: CI
 
 on:
   pull_request:
+    branches: [dev, staging, main]
   push:
     branches: [dev, staging, main]
 
