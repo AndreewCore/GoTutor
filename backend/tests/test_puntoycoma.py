@@ -1,4 +1,4 @@
-"""Inserción automática de ';' (analizador/puntoycoma.py) con un lexer PLY mínimo."""
+"""Inserción automática de ';' (LexerConPuntoYComa en analizador/lexico.py) con un lexer PLY mínimo."""
 
 import unittest
 from unittest import mock
@@ -8,7 +8,7 @@ import ply.yacc as yacc
 
 from analizador import lexico
 from analizador.modelos import columna
-from analizador.puntoycoma import VALOR_IMPLICITO, LexerConPuntoYComa
+from analizador.lexico import VALOR_IMPLICITO, LexerConPuntoYComa
 
 FIN = {"ID", "INT", "RPAREN", "RBRACE", "RAW", "RETURN", "INCREMENT"}
 

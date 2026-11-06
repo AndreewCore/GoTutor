@@ -70,7 +70,7 @@ _errores: list[ErrorAnalisis] = []
 #       ))
 #
 # Ojo: los ';' que agrega el lexer al final de línea llegan con p.value == "\n"
-# (ver puntoycoma.py). Para esos conviene decir "salto de línea inesperado",
+# (ver LexerConPuntoYComa en lexico.py). Para esos conviene decir "salto de línea inesperado",
 # como hace Go, porque el alumno no escribió ningún ';'.
 
 

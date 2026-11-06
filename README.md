@@ -140,7 +140,7 @@ Reglas:
 - El semántico solo corre si el léxico y el sintáctico terminan sin errores.
 - Punto y coma automático: si se llena `fin_de_sentencia` (bloque de Delimitadores en `lexico.py`), el
   lexer agrega un `SEMICOLON` al final de cada línea cuyo último token cierra
-  una sentencia, como hace Go (`puntoycoma.py`). Así la gramática separa
+  una sentencia, como hace Go. Así la gramática separa
   sentencias con `SEMICOLON` y no tiene que manejar saltos de línea. Estos
   `;` llegan con valor `"\n"`: en `p_error` muéstrenlos como "salto de línea".
 - `mensaje` dice qué está mal y `sugerencia` cómo arreglarlo. La interfaz es para
