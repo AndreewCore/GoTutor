@@ -68,10 +68,6 @@ _errores: list[ErrorAnalisis] = []
 #           mensaje=f"Token inesperado: '{p.value}'.",
 #           sugerencia="",
 #       ))
-#
-# Ojo: los ';' que agrega el lexer al final de línea llegan con p.value == "\n"
-# (ver LexerConPuntoYComa en lexico.py). Para esos conviene decir "salto de línea inesperado",
-# como hace Go, porque el alumno no escribió ningún ';'.
 
 
 def _tiene_reglas() -> bool:

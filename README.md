@@ -138,11 +138,6 @@ Reglas:
   nodo tiene un error, márquenlo con `error="syn"` o `error="sem"` para que salga
   en rojo.
 - El semántico solo corre si el léxico y el sintáctico terminan sin errores.
-- Punto y coma automático: si se llena `fin_de_sentencia` (bloque de Delimitadores en `lexico.py`), el
-  lexer agrega un `SEMICOLON` al final de cada línea cuyo último token cierra
-  una sentencia, como hace Go. Así la gramática separa
-  sentencias con `SEMICOLON` y no tiene que manejar saltos de línea. Estos
-  `;` llegan con valor `"\n"`: en `p_error` muéstrenlos como "salto de línea".
 - `mensaje` dice qué está mal y `sugerencia` cómo arreglarlo. La interfaz es para
   estudiantes, así que conviene escribirlos claros y en español.
 - Si su código lanza una excepción, la API no se cae: la fase sale como
