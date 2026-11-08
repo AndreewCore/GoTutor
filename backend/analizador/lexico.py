@@ -103,10 +103,77 @@ def t_COMENTARIO_LINEA(t):
 
 # ===== INICIO aporte: Danilo García (Danilogb18) =====
 # Reglas asignadas: Variables (identificadores), Tipos de datos.
-tokens_Danilogb18: list[str] = []
-reservadas_Danilogb18: dict[str, str] = {}
+tokens_Danilogb18: list[str] = ["ID", "ENTERO", "DECIMAL", "CADENA"]
+ 
+# Tipos primitivos y literales booleanos. En Go no son palabras reservadas sino identificadores predeclarados, pero se les da token propio para que el sintáctico distinga un tipo (`var x int`) de una variable. Se resuelven en t_ID igual que las reservadas.
+reservadas_Danilogb18: dict[str, str] = {
+    "int": "TIPO_INT",
+    "float64": "TIPO_FLOAT",
+    "string": "TIPO_STRING",
+    "bool": "TIPO_BOOL",
+    "true": "TRUE",
+    "false": "FALSE",
+}
+ 
+ 
+def _error_lexico(t, mensaje: str, sugerencia: str) -> None:
+    """Registra un error léxico de este bloque sin detener el análisis."""
+    t.lexer.errores.append(ErrorAnalisis(
+        fase="lex",
+        linea=t.lexer.lineno,
+        columna=columna(t.lexer.lexdata, t.lexpos),
+        mensaje=mensaje,
+        sugerencia=sugerencia,
+    ))
+ 
+ 
+# El orden de estas funciones importa porque PLY las prueba de arriba hacia abajo
+# 1) número mal formado, antes que los números válidos, para que `12abc` no  salga como ENTERO(12) + ID(abc);
+# 2) DECIMAL antes que ENTERO, para que `3.14` no salga como 3, '.', 14;
+# 3) CADENA antes que la cadena sin cerrar.
 
-# TODO(Danilogb18)
+ 
+def t_NUMERO_MAL_FORMADO(t):
+    r"[0-9]+(\.[0-9]+)?[a-zA-Z_][a-zA-Z_0-9]*"
+    resto = t.value.lstrip("0123456789")
+    digitos = t.value[: len(t.value) - len(resto)]
+    if resto[0].isalpha():
+        # `2nota`: probablemente una variable con el número adelante.
+        sugerencia = (f"Un identificador no puede empezar con un dígito. " f"Si es una variable, prueba con '{resto}{digitos}'.")
+    else:
+        # `12.5kg`, `12_000`: un número con algo pegado que GoTutor no admite.
+        sugerencia = ("Un número no puede llevar letras ni guiones bajos pegados: ""deja solo el valor numérico.")
+    _error_lexico(t, f"Número mal formado: '{t.value}'.", sugerencia)
+ 
+ 
+def t_DECIMAL(t):
+    r"[0-9]+\.[0-9]+"
+    return t
+ 
+ 
+def t_ENTERO(t):
+    r"[0-9]+"
+    return t
+ 
+ 
+def t_CADENA(t):
+    r'"([^"\\\n]|\\.)*"'
+    # Admite secuencias de escape como \n o \" dentro de la cadena.
+    return t
+ 
+ 
+def t_CADENA_SIN_CERRAR(t):
+    r'"([^"\\\n]|\\.)*\\?'
+    # El \? final absorbe una barra suelta al final de la línea; sin él, `"fin\` daría además un segundo error por el carácter '\'.
+    _error_lexico(t, "Cadena de texto sin cerrar.", 'Agrega una comilla doble (") al final del texto, en la misma línea.')
+ 
+ 
+def t_ID(t):
+    r"[a-zA-Z_][a-zA-Z_0-9]*"
+    # Se captura la palabra completa y luego se consulta el diccionario unido. Así `format` es ID y no FOR seguido de `mat`.
+    t.type = reservadas.get(t.value, "ID")
+    return t
+ 
 
 # ===== FIN aporte: Danilo García (Danilogb18) =====
 
