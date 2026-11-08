@@ -212,10 +212,76 @@ def t_ID(t):
 
 # ===== INICIO aporte: Samuel Echeverría (SamuelEcheverria) =====
 # Reglas asignadas: Operadores, Palabras reservadas.
-tokens_SamuelEcheverria: list[str] = []
-reservadas_SamuelEcheverria: dict[str, str] = {}
+tokens_SamuelEcheverria: list[str] = [
+    "ASIGNA_CORTA",
+    "MAS_ASIGNA",
+    "MENOS_ASIGNA",
+    "POR_ASIGNA",
+    "DIV_ASIGNA",
+    "INCREMENTO",
+    "DECREMENTO",
+    "IGUAL",
+    "DISTINTO",
+    "MENOR_IGUAL",
+    "MAYOR_IGUAL",
+    "AND",
+    "OR",
+    "MAS",
+    "MENOS",
+    "POR",
+    "DIVIDIDO",
+    "MODULO",
+    "ASIGNA",
+    "MENOR",
+    "MAYOR",
+    "NOT",
+    "AMPERSAND",
+]
+reservadas_SamuelEcheverria: dict[str, str] = {
+    "package": "PACKAGE",
+    "import": "IMPORT",
+    "func": "FUNC",
+    "var": "VAR",
+    "const": "CONST",
+    "return": "RETURN",
+    "if": "IF",
+    "else": "ELSE",
+    "for": "FOR",
+    "range": "RANGE",
+    "switch": "SWITCH",
+    "case": "CASE",
+    "default": "DEFAULT",
+    "break": "BREAK",
+    "continue": "CONTINUE",
+    "map": "MAP",
+}
 
-# TODO(SamuelEcheverria)
+t_ASIGNA_CORTA = r":="
+t_MAS_ASIGNA = r"\+="
+t_MENOS_ASIGNA = r"-="
+t_POR_ASIGNA = r"\*="
+t_DIV_ASIGNA = r"/="
+t_INCREMENTO = r"\+\+"
+t_DECREMENTO = r"--"
+t_IGUAL = r"=="
+t_DISTINTO = r"!="
+t_MENOR_IGUAL = r"<="
+t_MAYOR_IGUAL = r">="
+t_AND = r"&&"
+t_OR = r"\|\|"
+
+t_MAS = r"\+"
+t_MENOS = r"-"
+t_POR = r"\*"
+t_DIVIDIDO = r"/"
+t_MODULO = r"%"
+t_ASIGNA = r"="
+t_MENOR = r"<"
+t_MAYOR = r">"
+t_NOT = r"!"
+t_AMPERSAND = r"&"
+
+
 
 # ===== FIN aporte: Samuel Echeverría (SamuelEcheverria) =====
 
