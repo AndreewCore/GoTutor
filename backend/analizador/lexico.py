@@ -36,11 +36,11 @@ from .modelos import ErrorAnalisis, Token, columna  # noqa: F401 (ErrorAnalisis 
 tokens_AndreewCore: list[str] = [
     "LLAVE_IZQ", "LLAVE_DER",
     "PAREN_IZQ", "PAREN_DER",
-    "CORCHETE_IZQ", "CORCHETE_DER"
+    "CORCHETE_IZQ", "CORCHETE_DER",
     "COMA", "PUNTO_COMA", "DOS_PUNTOS", "PUNTO",
 ]
 
-reservadas_AndreewCore: dict[str, str] = {}
+reservadas_AndreewCore: dict[str, str] = {} # Ninguna todavía
 
 # TODO(AndreewCore)
 
@@ -96,7 +96,39 @@ def t_COMENTARIO_SIN_CERRAR(t):
 # Formato de COMENTARIO LINEA: // COMENTARIO
 
 def t_COMENTARIO_LINEA(t):
+
     r"//[^\n]*" # [^\n] cualquier caractér menos \n para que termine antes del espacio.
+
+# Sugerencias para Front-End: Concepto de GoTutor
+
+_SUGERENCIAS_CARACTER: dict[str, str] = {
+    "@": "Go no usa '@'. Si querías multiplicar, usa '*'.",
+    "#": "Los comentarios en Go empiezan con // o van entre /* y */.",
+    "$": "Los nombres en Go no llevan '$': usa solo letras, dígitos y '_'.",
+    "?": "Go no tiene operador ternario '?:'. Usa un if / else.",
+    "'": 'En GoTutor las cadenas van entre comillas dobles: "texto".',
+    "`": 'GoTutor no admite cadenas con acento grave; usa comillas dobles.',
+}
+
+# Mensaje de Error para manejar caractéres especiales
+# NOTA: Go sí acepta caractéres especiales pero buscamos reducir el scope del proyecto para minimizar validaciones innecesarias.
+# ^ Consultar más adelante
+
+def t_error(t):
+    caracter = t.value[0]
+    if caracter.isalpha():
+        sugerencia = "En GoTutor los nombres solo usan letras sin tilde ni ñ, dígitos y '_'."
+    else:
+        sugerencia = _SUGERENCIAS_CARACTER.get(
+            caracter, "Bórralo o reemplázalo por un símbolo válido de Go.")
+    t.lexer.errores.append(ErrorAnalisis(
+        fase="lex",
+        linea=t.lexer.lineno,
+        columna=columna(t.lexer.lexdata, t.lexpos),
+        mensaje=f"Carácter no reconocido: '{caracter}'.",
+        sugerencia=sugerencia,
+    ))
+    t.lexer.skip(1)
 
 # ===== FIN aporte: Paúl Rodríguez (AndreewCore) =====
 
