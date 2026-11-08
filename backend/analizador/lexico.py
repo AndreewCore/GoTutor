@@ -33,10 +33,70 @@ from .modelos import ErrorAnalisis, Token, columna  # noqa: F401 (ErrorAnalisis 
 # ===== INICIO aporte: Paúl Rodríguez (AndreewCore) =====
 # Reglas asignadas: Delimitadores, Comentarios.
 # También aquí: t_ignore, saltos de línea (t.lexer.lineno) y t_error.
-tokens_AndreewCore: list[str] = []
+tokens_AndreewCore: list[str] = [
+    "LLAVE_IZQ", "LLAVE_DER",
+    "PAREN_IZQ", "PAREN_DER",
+    "CORCHETE_IZQ", "CORCHETE_DER"
+    "COMA", "PUNTO_COMA", "DOS_PUNTOS", "PUNTO",
+]
+
 reservadas_AndreewCore: dict[str, str] = {}
 
 # TODO(AndreewCore)
+
+# DELIMITADORES
+
+t_LLAVE_IZQ = r"\{"
+t_LLAVE_DER = r"\}"
+t_PAREN_IZQ = r"\("
+t_PAREN_DER = r"\)"
+t_CORCHETE_IZQ = r"\["
+t_CORCHETE_DER = r"\]"
+t_COMA = r","
+t_PUNTO_COMA = r";"
+t_DOS_PUNTOS = r":" # Tener en cuenta :=
+t_PUNTO = r"\." # Tener en cuenta t_DECIMAL
+
+t_ignore = " \t\r"
+
+def t_NUEVA_LINEA(t):
+    r"\n+"
+    t.lexer.lineno += len(t.value)
+
+# Pendiente ; insertado al final
+
+# COMENTARIOS
+
+# Formato de COMENTARIO BLOQUE: /* COMENTARIO */
+
+def t_COMENTARIO_BLOQUE(t):
+
+    r"/\*[\s\S]*?\*/" #\s espacios en blanco y \S cualquier caractér *? n o más veces
+
+    t.lexer.lineno += t.value.count("\n")
+
+    # COMENTARIO BLOQUE SIN CERRAR
+
+def t_COMENTARIO_SIN_CERRAR(t):
+    r"/\*[\s\S]*"
+
+    # Solo llega aquí si no hubo '*/': se come hasta el final del archivo.
+
+    # Indicación de error via lexer
+    t.lexer.errores.append(ErrorAnalisis(
+        fase="lex",
+        linea=t.lexer.lineno,
+        columna=columna(t.lexer.lexdata, t.lexpos),
+        mensaje="Comentario de varias líneas sin cerrar.",
+        sugerencia="Cierra el comentario con */ o usa // si es de una sola línea.",
+    ))
+
+    t.lexer.lineno += t.value.count("\n")
+
+# Formato de COMENTARIO LINEA: // COMENTARIO
+
+def t_COMENTARIO_LINEA(t):
+    r"//[^\n]*" # [^\n] cualquier caractér menos \n para que termine antes del espacio.
 
 # ===== FIN aporte: Paúl Rodríguez (AndreewCore) =====
 
