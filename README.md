@@ -20,6 +20,7 @@ GoTutor/
 │   ├── bitacora.py           escribe los logs de cada fase en logs/
 │   ├── app.py                API Flask (POST /api/analizar)
 │   ├── probar_lexico.py      corre solo el léxico sobre un .go y deja su log
+│   ├── probar_sintactico.py  corre el sintáctico sobre un .go y deja su log
 │   ├── logs/                 logs generados en cada análisis
 │   └── tests/                pruebas de la integración
 └── frontend/                 Vite + JavaScript sin framework (pnpm)
