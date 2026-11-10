@@ -28,8 +28,18 @@ class PruebasServicio(unittest.TestCase):
         """Analiza sin escribir logs para no ensuciar backend/logs."""
         return servicio.analizar(CODIGO, "main.go", escribir_logs=False)
 
-    def test_plantillas_sin_implementar(self):
+    def test_lexico_real_reconoce_el_programa(self):
+        """El léxico del grupo (avance 1) tokeniza un programa válido sin errores."""
         r = self.analizar()
+        self.assertEqual(r["fases"]["lex"]["estado"], "ok")
+        self.assertEqual(r["tokens"][0]["tipo"], "PACKAGE")
+
+    def test_fase_sin_implementar_detiene_las_demas(self):
+        """Una fase que lanza NotImplementedError sale como no_impl y deja pendientes las siguientes."""
+        # Se simula con mock porque el léxico real ya está implementado y
+        # el mecanismo debe seguir probado aunque las fases avancen.
+        with mock.patch.object(servicio, "analizar_lexico", side_effect=NotImplementedError):
+            r = self.analizar()
         self.assertEqual(r["fases"]["lex"]["estado"], "no_impl")
         self.assertEqual(r["fases"]["syn"]["estado"], "pendiente")
         self.assertIsNone(r["tokens"])
