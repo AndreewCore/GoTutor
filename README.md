@@ -4,14 +4,17 @@ Tutor web para aprender cómo un compilador analiza Go: el alumno escribe códig
 y ve, fase por fase, los tokens, el árbol sintáctico, la tabla de símbolos y
 los errores, con explicaciones de cada fase.
 
+Proyecto de Lenguajes de Programación (ESPOL), grupo 3. Las normas de trabajo
+del grupo están en [CONTRIBUTING.md](CONTRIBUTING.md).
+
 ```
 GoTutor/
 ├── algoritmos/               algoritmoN.go (válido) y algoritmoN_errorM.go (con errores) de cada integrante
 ├── backend/                  Python 3.11+ · Flask · PLY
 │   ├── analizador/
-│   │   ├── lexico.py         ← GRUPO: análisis léxico (ply.lex)
-│   │   ├── sintactico.py     ← GRUPO: análisis sintáctico + AST (ply.yacc)
-│   │   ├── semantico.py      ← GRUPO: análisis semántico + tabla de símbolos
+│   │   ├── lexico.py         análisis léxico (ply.lex)
+│   │   ├── sintactico.py     análisis sintáctico + AST (ply.yacc)
+│   │   ├── semantico.py      análisis semántico + tabla de símbolos
 │   │   └── modelos.py        contrato de datos con la interfaz (no cambiar campos)
 │   ├── servicio.py           ejecuta las 3 fases en orden y arma el JSON
 │   ├── bitacora.py           escribe los logs de cada fase en logs/
@@ -69,96 +72,29 @@ En el avance 1 (solo léxico) lo esperado es `OK (skipped=13)`: los 6 casos de
 `test_ejemplos.py` necesitan el sintáctico y los 7 de `test_integracion_ply.py`
 se desactivan porque `lexico.py` ya tiene reglas.
 
-## Para el grupo: avance 1 (analizador léxico)
+## Avance 1: analizador léxico
 
-Entrega: link del repositorio hasta el **08/11/2026 23h55**. Quien no tenga
-commits en el historial no recibe nota.
-
-**Estado: completo.** Las reglas léxicas de los tres integrantes están en
-`feature/lexico`, y cada uno tiene su algoritmo válido, dos versiones con
-errores léxicos y los logs de esas pruebas en `backend/logs/`. El sintáctico y
-el semántico quedan para los siguientes avances, así que en la interfaz salen
+**Estado: completo.** El analizador léxico (`backend/analizador/lexico.py`,
+con PLY) reconoce el subconjunto de Go del proyecto. El sintáctico y el
+semántico corresponden a los siguientes avances, así que en la interfaz salen
 como "Función no implementada".
 
-| Integrante | Usuario | Reglas léxicas | Algoritmos |
+| Integrante | Usuario | Reglas léxicas | Algoritmos de prueba |
 |---|---|---|---|
 | Paúl Rodríguez | `AndreewCore` | Delimitadores, Comentarios | `algoritmo1.go`, `algoritmo1_error1.go`, `algoritmo1_error2.go` |
 | Danilo García | `Danilogb18` | Variables, Tipos de datos | `algoritmo2.go`, `algoritmo2_error1.go`, `algoritmo2_error2.go` |
 | Samuel Echeverría | `SamuelEcheverria` | Operadores, Palabras reservadas | `algoritmo3.go`, `algoritmo3_error1.go`, `algoritmo3_error2.go` |
 
-Los nombres de los tokens son los del documento del proyecto (`ENTERO`,
-`ASIGNA_CORTA`, `LLAVE_IZQ`…).
-
-**1. Rama.** Cada uno trabaja en su rama, que sale de `feature/lexico`, y abre
-el PR hacia `feature/lexico` (no hacia `dev`):
-
-```bash
-git fetch
-git switch -c feature/lexico-<usuario> origin/feature/lexico
-```
-
-Cuando los tres aportes estén en `feature/lexico`, esa rama se integra a `dev`
-con un PR. La CI solo corre en los PR hacia `dev`, `staging` y `main`, porque
-`test_ejemplos.py` necesita los tokens de los tres para pasar.
-
-**2. Código.** En `backend/analizador/lexico.py` cada integrante escribe solo
-dentro de su bloque `INICIO aporte` / `FIN aporte`. Sus tokens van en su lista
-`tokens_<usuario>` y sus palabras reservadas en `reservadas_<usuario>`; al final
-del archivo se juntan solos en `tokens` y `reservadas`. Así nadie edita las
-mismas líneas y los merges no chocan.
-
-**3. Algoritmo.** Escribir en su `algoritmos/algoritmoN.go` un programa Go con la
-mayoría de tokens del subconjunto.
-
-**4. Log.** Probar el lexer con su algoritmo; cada prueba genera un log en
-`backend/logs/` con todos los tokens y errores:
+Cada integrante aporta un programa válido con la mayoría de tokens del
+subconjunto y dos versiones con errores léxicos. Los logs de esas pruebas están
+en `backend/logs/`. Para reproducir uno:
 
 ```bash
 cd backend
-python probar_lexico.py ../algoritmos/algoritmo2.go -u Danilogb18
-# -> logs/lexico-Danilogb18-06-11-2026-14h32.txt
+python probar_lexico.py ../algoritmos/algoritmo3_error1.go -u SamuelEcheverria
 ```
 
-Usen `-u` con su usuario de GitHub: sin esa opción el nombre del log se toma
-de `git config user.name`, que suele ser el nombre completo.
-
-**5. Commit.** Incluir los logs en el commit (`git add backend/logs/`): deben
-quedar en el historial.
-
-## Para el grupo: qué hay que implementar
-
-Solo se editan los tres archivos de `backend/analizador/`. Cada uno trae
-`TODO(grupo)` con ejemplos. Mientras una fase no esté implementada, la interfaz
-la muestra como **"Función no implementada"**, así que pueden avanzar una por una.
-
-| Archivo | Función que llama la API | Devuelve | Se considera "no implementado" mientras… |
-|---|---|---|---|
-| `lexico.py` | `analizar_lexico(codigo)` | `(list[Token], list[ErrorAnalisis])` | la lista `tokens` esté vacía |
-| `sintactico.py` | `analizar_sintactico(codigo)` | `(Nodo \| None, list[ErrorAnalisis])` | no exista ninguna regla `p_xxx` |
-| `semantico.py` | `analizar_semantico(ast, codigo)` | `(list[Simbolo], list[ErrorAnalisis])` | lance `NotImplementedError` |
-
-Reglas:
-
-- Los errores **no se imprimen**: se agregan a la lista (`t.lexer.errores` en el
-  léxico y `_errores` en el sintáctico). Si no, no aparecen en la interfaz.
-- Las líneas y columnas empiezan en 1. Para la columna usen
-  `columna(codigo, t.lexpos)` de `modelos.py`: un tabulador cuenta como una
-  columna (como en Go) y la cuenta coincide con la del editor de la interfaz,
-  incluso con emojis.
-- El parser construye objetos `Nodo(tipo, dato, linea, hijos)`, no tuplas. Si un
-  nodo tiene un error, márquenlo con `error="syn"` o `error="sem"` para que salga
-  en rojo.
-- El semántico solo corre si el léxico y el sintáctico terminan sin errores.
-- `mensaje` dice qué está mal y `sugerencia` cómo arreglarlo. La interfaz es para
-  estudiantes, así que conviene escribirlos claros y en español.
-- Si su código lanza una excepción, la API no se cae: la fase sale como
-  **"Fallo del analizador"** con el mensaje, y el traceback aparece en la consola
-  de Flask.
-- Para probar sin la interfaz:
-  `python -c "import servicio, json; print(json.dumps(servicio.analizar(open('x.go').read()), indent=2, ensure_ascii=False))"`
-  desde `backend/`.
-
-### Logs
+## Logs
 
 Cada análisis escribe en `backend/logs/` un archivo por cada fase que se ejecutó:
 
