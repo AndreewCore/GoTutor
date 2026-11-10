@@ -20,22 +20,13 @@ func valorInventario(precios map[string]float64, stock map[string]int) float64 {
 
 func main() {
 
-	precios := map[string]floar64{
-		"lapiz": 0.5, 
-		"cuaderno": 2.75
-	}
+	precios := map[string]float64{"lapiz": 0.5, "cuaderno": 2.75}
 
-	stock := map[string]int{
-		"lapiz": 40, 
-		"cuaderno": 3
-	}
+	stock := map[string]int{"lapiz": 40, "cuaderno": 3}
 
 	minimos := [2]int{10, 5}
 
-	nombres := []string{
-		"lapiz", 
-		"cuaderno"
-	}
+	nombres := []string{"lapiz", "cuaderno"}
 
 	const LIMITE = 100
 	var reponer string
