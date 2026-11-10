@@ -6,7 +6,7 @@ los errores, con explicaciones de cada fase.
 
 ```
 GoTutor/
-├── algoritmos/               algoritmo1.go, 2, 3: programa de prueba de cada integrante
+├── algoritmos/               algoritmoN.go (válido) y algoritmoN_errorM.go (con errores) de cada integrante
 ├── backend/                  Python 3.11+ · Flask · PLY
 │   ├── analizador/
 │   │   ├── lexico.py         ← GRUPO: análisis léxico (ply.lex)
@@ -58,22 +58,33 @@ http://localhost:8000.
 Pruebas: `cd backend && python -m unittest -v`.
 
 - `test_api.py`, `test_contrato.py`: API, orquestación y campos que lee la interfaz.
+  `test_api.py` también comprueba que el léxico real tokenice un programa válido.
 - `test_integracion_ply.py`: el esqueleto con PLY real y una gramática mínima.
   Se omite sola en cuanto `lexico.py`/`sintactico.py` tengan reglas.
 - `test_ejemplos.py`: cada ejemplo de la vista Ejemplos debe fallar en la fase
   y línea que declara (necesita Node para leer `ejemplos.js`). Los casos cuya
   fase aún no está implementada salen como *skipped*: esa lista es lo que falta.
 
+En el avance 1 (solo léxico) lo esperado es `OK (skipped=13)`: los 6 casos de
+`test_ejemplos.py` necesitan el sintáctico y los 7 de `test_integracion_ply.py`
+se desactivan porque `lexico.py` ya tiene reglas.
+
 ## Para el grupo: avance 1 (analizador léxico)
 
 Entrega: link del repositorio hasta el **08/11/2026 23h55**. Quien no tenga
 commits en el historial no recibe nota.
 
-| Integrante | Usuario | Reglas léxicas | Algoritmo |
+**Estado: completo.** Las reglas léxicas de los tres integrantes están en
+`feature/lexico`, y cada uno tiene su algoritmo válido, dos versiones con
+errores léxicos y los logs de esas pruebas en `backend/logs/`. El sintáctico y
+el semántico quedan para los siguientes avances, así que en la interfaz salen
+como "Función no implementada".
+
+| Integrante | Usuario | Reglas léxicas | Algoritmos |
 |---|---|---|---|
-| Paúl Rodríguez | `AndreewCore` | Delimitadores, Comentarios | `algoritmos/algoritmo1.go` |
-| Danilo García | `Danilogb18` | Variables, Tipos de datos | `algoritmos/algoritmo2.go` |
-| Samuel Echeverría | `SamuelEcheverria` | Operadores, Palabras reservadas | `algoritmos/algoritmo3.go` |
+| Paúl Rodríguez | `AndreewCore` | Delimitadores, Comentarios | `algoritmo1.go`, `algoritmo1_error1.go`, `algoritmo1_error2.go` |
+| Danilo García | `Danilogb18` | Variables, Tipos de datos | `algoritmo2.go`, `algoritmo2_error1.go`, `algoritmo2_error2.go` |
+| Samuel Echeverría | `SamuelEcheverria` | Operadores, Palabras reservadas | `algoritmo3.go`, `algoritmo3_error1.go`, `algoritmo3_error2.go` |
 
 Los nombres de los tokens son los del documento del proyecto (`ENTERO`,
 `ASIGNA_CORTA`, `LLAVE_IZQ`…).
