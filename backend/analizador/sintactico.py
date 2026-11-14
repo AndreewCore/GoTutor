@@ -15,8 +15,10 @@ semantico.py. Construye objetos `Nodo`, no tuplas:
         p[0] = Nodo("IfStmt", "", p.lineno(1), [p[2], p[3]])
 
 La gramática es la de la sección 4 del documento del proyecto
-(Proyecto_LP_Parcial1_LosGogos_G3.pdf). Lo que el documento no cubre está en
-"Casos fuera de la gramática", al final de este encabezado.
+(Proyecto_LP_Parcial1_LosGogos_G3.pdf). Qué reglas le tocan a cada uno sale
+de la Tabla 11 (Asignación de reglas) más el reparto del avance 2. Lo que
+queda fuera está en "Casos fuera de la gramática", al final de este
+encabezado.
 
 Cómo se reparte este archivo
 ----------------------------
@@ -29,9 +31,16 @@ cada integrante agrega sus alternativas a `sentencia`, `expresion` y `tipo`
 desde su propio bloque, con su propia función:
 
     def p_sentencia_AndreewCore(p):
-        '''sentencia : sentencia_if
-                     | declaracion_func'''
+        '''sentencia : declaracion_var
+                     | for_condicional'''
         p[0] = p[1]
+
+Cuando dos integrantes aportan formas de la misma construcción (for y
+funciones), cada uno usa su propio no terminal (`for_condicional`,
+`for_clasico`, `func_con_retorno`...) en lugar de `sentencia_for` o
+`declaracion_func`: si dos escribieran `sentencia : sentencia_for`, PLY se
+detiene con "Duplicate rule". El árbol usa el mismo `Nodo` para todas
+(p. ej. "ForStmt", "FuncDecl"), así el semántico no ve la diferencia.
 
 Un no terminal que se usa pero nadie define rompe la construcción del parser
 ("Symbol 'x' used, but not defined"): no dejen reglas a medias fuera de los
@@ -43,27 +52,29 @@ deja analizador/parser.out (ignorado por git) con los estados y conflictos.
 
 Casos fuera de la gramática (pendientes / limitaciones para la sustentación)
 --------------------------------------------------------------------------
-El documento es la referencia. Estos casos NO están en su sección 4; se
-anotan para explicarlos en la sustentación o resolverlos en el avance 3.
+El alcance es la Tabla 11 del documento más el reparto del avance 2 (ver
+CONTRIBUTING.md). Lo de la sección 4 que nadie tiene asignado no se
+implementa; se anota aquí para explicarlo en la sustentación.
 
   Se implementan aunque no estén en la sección 4 (el documento los necesita):
   - Programa, `package` e `import`: el documento no define la regla inicial.
     Resuelto en la estructura común (solo `import "x"`, no `import ( ... )`).
   - Tipos compuestos en parámetros (`notas []float64`, `m map[string]int`):
-    la Tabla 9 los usa como tipos y los tres algoritmos los necesitan. Cada
-    dueño de una estructura de datos agrega su forma a `tipo`.
-  - Conversión explícita `float64(x)`: la exige la regla semántica 4 y la
-    usan algoritmo1.go (L15) y algoritmo2.go (L23). Va con las expresiones
-    aritméticas (Danilogb18).
+    la Tabla 9 los usa como tipos. Cada dueño de una estructura de datos
+    agrega su forma a `tipo`.
   - Structs y métodos: la entrega pide clases, propiedades y métodos y el
     documento no los define (AndreewCore).
 
-  Pendientes (si no se implementan, quedan como limitación):
+  Fuera del alcance (están en la sección 4 o en los algoritmos, pero no en
+  la Tabla 11 ni en el reparto):
+  - `var total = 10` (var sin tipo): solo se asignó la variable con tipo.
+  - Conversión explícita `float64(x)`. algoritmo1.go (L15) y algoritmo2.go
+    (L23) la usan: hay que reescribir esas líneas o fallarán.
   - Asignar a un índice: `stock["lapiz"] += llegada` (algoritmo1.go L37).
-    `asignacion` del documento solo admite un ID a la izquierda.
+    `asignacion` solo admite un ID a la izquierda.
   - Declaración múltiple: `suma, promedio, perfecta := estadisticas(notas)`
-    (algoritmo2.go L38). Opcional en el bloque de SamuelEcheverria, ya que
-    sin ella una función con varios retornos no se puede usar.
+    (algoritmo2.go L38). Sin ella, el resultado de una función con varios
+    retornos solo se puede devolver, no guardar.
 
   Limitaciones aceptadas:
   - Sin inserción automática de ';': los saltos de línea se ignoran y ';' es
@@ -73,8 +84,8 @@ anotan para explicarlos en la sustentación o resolverlos en el avance 3.
   - Por lo mismo, `return` sin valor seguido de una línea que empieza con
     un ID se lee como `return x` (conflicto shift/reduce esperado).
   - `range` solo sobre un ID; `case` debe tener al menos una sentencia.
-  - `declaracion_func` es una sentencia (así lo define el documento), así que
-    el parser acepta funciones dentro de funciones; Go no.
+  - Las funciones son sentencias (así lo define el documento), así que el
+    parser acepta funciones dentro de funciones; Go no.
   - Sin `if x := f(); x > 0`, `import ( ... )`, literales de struct dentro de
     la condición de if/for/switch, punteros, interfaces ni goroutines.
 """
@@ -326,34 +337,49 @@ def _fin_de(tok) -> int:
 
 
 # ===== INICIO aporte: Paúl Rodríguez (AndreewCore) =====
-# Reglas asignadas:
-#   - Estructura de datos: arreglo  `[3]int{1, 2, 3}`
-#   - Estructura de control: if / else if / else
-#   - Tipo de función: sin retorno  `func saludar() { ... }`
+# Reglas asignadas (Tabla 11 del documento):
+#   - Variable con tipo: `var edad int`, `var nombre string = "Ana"`
+#   - Sentencia for condicional: `for total < 100 { ... }`
+#   - Estructura de datos: map  `map[string]int{"Ana": 20}`
+#   - Funciones con retorno: `func suma(a int, b int) int { ... }`
+# Además (reparto del avance 2):
 #   - Impresión e ingreso de datos: `fmt.Println(...)`, `fmt.Scan(&x)`
+#   - Acceso por índice: `numeros[0]`, `edades["Ana"]`
+#   - for infinito: `for { ... }`
 #   - Clases: struct (propiedades) y métodos con receptor
 #
-# TODO(AndreewCore): sección 4 del documento, "Impresión y solicitud de datos".
+# TODO(AndreewCore): sección 4, "Declaración de Variables" (con tipo).
+#   sentencia       : declaracion_var
+#   declaracion_var : VAR ID tipo
+#                   | VAR ID tipo ASIGNA expresion
+#
+# TODO(AndreewCore): sección 4, "Estructuras de Control" (for condicional e infinito).
+#   sentencia       : for_condicional | for_infinito
+#   for_condicional : FOR expresion bloque
+#   for_infinito    : FOR bloque
+#
+# TODO(AndreewCore): sección 4, "Estructuras de Datos" (map).
+#   expresion   : mapa
+#   mapa        : MAP CORCHETE_IZQ tipo CORCHETE_DER tipo LLAVE_IZQ lista_pares LLAVE_DER
+#   lista_pares : par | lista_pares COMA par
+#   par         : expresion DOS_PUNTOS expresion
+#   tipo        : MAP CORCHETE_IZQ tipo CORCHETE_DER tipo      (para parámetros, Tabla 9)
+#
+# TODO(AndreewCore): sección 4, "Declaraciones de Funciones" (con un retorno).
+#   sentencia        : func_con_retorno
+#   func_con_retorno : FUNC ID PAREN_IZQ parametros PAREN_DER tipo bloque
+#   (`return` ya está en la estructura común.)
+#
+# TODO(AndreewCore): sección 4, "Impresión y solicitud de datos".
 #   llamada   : ID PUNTO ID PAREN_IZQ argumentos PAREN_DER
 #   expresion : AMPERSAND ID
 #
-# TODO(AndreewCore): sección 4, "Estructuras de Datos" (arreglo).
-#   expresion : arreglo
-#   arreglo   : CORCHETE_IZQ ENTERO CORCHETE_DER tipo LLAVE_IZQ lista_valores LLAVE_DER
-#   tipo      : CORCHETE_IZQ ENTERO CORCHETE_DER tipo      (para parámetros, Tabla 9)
-#   (`acceso_indice` lo define Danilogb18 y sirve para arreglos y slices.)
+# TODO(AndreewCore): sección 4, "Estructuras de Datos" (acceso por índice).
+#   expresion     : acceso_indice
+#   acceso_indice : ID CORCHETE_IZQ expresion CORCHETE_DER
+#   (Sirve para los arreglos de SamuelEcheverria, los slices de Danilogb18 y los maps.)
 #
-# TODO(AndreewCore): sección 4, "Estructuras de Control" (if).
-#   sentencia    : sentencia_if
-#   sentencia_if : IF expresion bloque
-#                | IF expresion bloque ELSE bloque
-#                | IF expresion bloque ELSE sentencia_if
-#
-# TODO(AndreewCore): sección 4, "Declaraciones de Funciones" (sin retorno).
-#   sentencia        : declaracion_func
-#   declaracion_func : FUNC ID PAREN_IZQ parametros PAREN_DER bloque
-#
-# TODO(AndreewCore): clases (no están en el documento; los pide la entrega).
+# TODO(AndreewCore): clases (no están en el documento; las pide la entrega).
 #   sentencia          : declaracion_struct | declaracion_metodo
 #   declaracion_struct : TYPE ID STRUCT LLAVE_IZQ campos LLAVE_DER
 #   campos             : campo | campos campo
@@ -361,90 +387,103 @@ def _fin_de(tok) -> int:
 #   declaracion_metodo : FUNC PAREN_IZQ ID ID PAREN_DER ID PAREN_IZQ parametros PAREN_DER bloque
 #                      | FUNC PAREN_IZQ ID ID PAREN_DER ID PAREN_IZQ parametros PAREN_DER tipo bloque
 #   expresion          : ID PUNTO ID                                   (leer una propiedad)
-#   llamada            : ID PUNTO ID PAREN_IZQ argumentos PAREN_DER    (ya cubre p.metodo())
-#   Cuidado: `tipo : ID` (para `var p Persona`) choca con la llamada `f(x)`
-#   por la conversión `tipo(x)`; y un literal `Persona{...}` como expresión
-#   general choca con `if x {`. Si se agregan, que sea con reglas propias,
-#   p. ej. `declaracion_corta : ID ASIGNA_CORTA ID LLAVE_IZQ ... LLAVE_DER`.
+#   (La llamada `p.metodo()` ya queda cubierta por la llamada con prefijo de fmt.)
+#   Cuidado: `tipo : ID` (para `var p Persona`) choca con la llamada `f(x)`,
+#   y un literal `Persona{...}` como expresión general choca con `for x {`.
+#   Si se agregan, que sea con reglas propias, p. ej.
+#   `declaracion_corta : ID ASIGNA_CORTA ID LLAVE_IZQ ... LLAVE_DER`.
 
 # ===== FIN aporte: Paúl Rodríguez (AndreewCore) =====
 
 
 # ===== INICIO aporte: Danilo García (Danilogb18) =====
-# Reglas asignadas:
-#   - Estructura de datos: slice  `[]int{4, 5, 6}` y acceso por índice `a[i]`
-#   - Estructura de control: for (las 4 formas)
-#   - Tipo de función: con un retorno  `func suma(a int, b int) int { ... }`
-#   - Declaración y asignación de variables, expresiones aritméticas
+# Reglas asignadas (Tabla 11 del documento):
+#   - Variable de asignación compuesta: `x += 2` (y la asignación simple `x = 8`)
+#   - Estructura de datos: slice  `[]int{4, 5, 6}`
+#   - Sentencia for range: `for i, v := range numeros { ... }`
+#   - Funciones con múltiple retorno: `func dividir(...) (float64, bool) { ... }`
+# Además (reparto del avance 2):
+#   - Expresiones booleanas
+#   - Declaración corta `x := 5`
+#   - for clásico: `for i := 0; i < 10; i++ { ... }`
+#   - Incremento y decremento: `x++`, `x--`
 #
-# Tokens que usan `%prec` en sus reglas (p. ej. "UMINUS" para el '-' unario).
-# Se agregan a la precedencia al final del archivo; PLY no construye el
-# parser si un nombre está en la precedencia y ninguna regla lo usa, por eso
-# la lista empieza vacía.
-precedencia_Danilogb18: list[str] = []
-
-# TODO(Danilogb18): sección 4, "Declaración de Variables".
-#   sentencia         : declaracion_var | declaracion_corta | declaracion_const | asignacion
-#   declaracion_var   : VAR ID tipo
-#                     | VAR ID tipo ASIGNA expresion
-#                     | VAR ID ASIGNA expresion
-#   declaracion_corta : ID ASIGNA_CORTA expresion
-#   declaracion_const : CONST ID ASIGNA expresion
-#   asignacion        : ID ASIGNA expresion | ID MAS_ASIGNA expresion | ID MENOS_ASIGNA expresion
+# TODO(Danilogb18): sección 4, "Declaración de Variables" (asignación y forma corta).
+#   sentencia         : asignacion | declaracion_corta
+#   asignacion        : ID ASIGNA expresion
+#                     | ID MAS_ASIGNA expresion | ID MENOS_ASIGNA expresion
 #                     | ID POR_ASIGNA expresion | ID DIV_ASIGNA expresion
+#   declaracion_corta : ID ASIGNA_CORTA expresion
 #
-# TODO(Danilogb18): sección 4, "Expresiones Aritméticas". Los operandos simples
-# (ENTERO, DECIMAL, CADENA, ID, paréntesis) ya están en la estructura común.
-#   expresion : expresion MAS expresion | expresion MENOS expresion
-#             | expresion POR expresion | expresion DIVIDIDO expresion
-#             | expresion MODULO expresion
-#             | MENOS expresion %prec UMINUS      (y agregar "UMINUS" a precedencia_Danilogb18)
-#   expresion : tipo PAREN_IZQ expresion PAREN_DER    (conversión float64(x), regla semántica 4)
-#
-# TODO(Danilogb18): sección 4, "Estructuras de Datos" (slice y acceso).
-#   expresion     : slice | acceso_indice
-#   slice         : CORCHETE_IZQ CORCHETE_DER tipo LLAVE_IZQ lista_valores LLAVE_DER
-#   acceso_indice : ID CORCHETE_IZQ expresion CORCHETE_DER
-#   tipo          : CORCHETE_IZQ CORCHETE_DER tipo      (para parámetros, Tabla 9)
-#
-# TODO(Danilogb18): sección 4, "Estructuras de Control" (for).
-#   sentencia     : sentencia_for | incremento
-#   sentencia_for : FOR bloque
-#                 | FOR expresion bloque
-#                 | FOR declaracion_corta PUNTO_COMA expresion PUNTO_COMA post_for bloque
-#                 | FOR ID COMA ID ASIGNA_CORTA RANGE ID bloque
-#   post_for      : incremento | asignacion
-#   incremento    : ID INCREMENTO | ID DECREMENTO
-#
-# TODO(Danilogb18): sección 4, "Declaraciones de Funciones" (un retorno).
-#   sentencia        : declaracion_func
-#   declaracion_func : FUNC ID PAREN_IZQ parametros PAREN_DER tipo bloque
-#   (`return` ya está en la estructura común.)
-
-# ===== FIN aporte: Danilo García (Danilogb18) =====
-
-
-# ===== INICIO aporte: Samuel Echeverría (SamuelEcheverria) =====
-# Reglas asignadas:
-#   - Estructura de datos: map  `map[string]int{"Ana": 20}`
-#   - Estructura de control: switch / case / default
-#   - Tipo de función: con varios retornos  `func dividir(...) (float64, bool) { ... }`
-#   - Condiciones con conectores lógicos y comparaciones
-#
-# TODO(SamuelEcheverria): sección 4, "Expresiones Booleanas". TRUE y FALSE ya
-# están en la estructura común; la precedencia ya incluye estos operadores.
+# TODO(Danilogb18): sección 4, "Expresiones Booleanas". TRUE y FALSE ya están
+# en la estructura común; la precedencia ya incluye estos operadores.
 #   expresion : expresion IGUAL expresion | expresion DISTINTO expresion
 #             | expresion MENOR expresion | expresion MAYOR expresion
 #             | expresion MENOR_IGUAL expresion | expresion MAYOR_IGUAL expresion
 #             | expresion AND expresion | expresion OR expresion
 #             | NOT expresion
 #
-# TODO(SamuelEcheverria): sección 4, "Estructuras de Datos" (map).
-#   expresion   : mapa
-#   mapa        : MAP CORCHETE_IZQ tipo CORCHETE_DER tipo LLAVE_IZQ lista_pares LLAVE_DER
-#   lista_pares : par | lista_pares COMA par
-#   par         : expresion DOS_PUNTOS expresion
-#   tipo        : MAP CORCHETE_IZQ tipo CORCHETE_DER tipo      (para parámetros, Tabla 9)
+# TODO(Danilogb18): sección 4, "Estructuras de Datos" (slice).
+#   expresion : slice
+#   slice     : CORCHETE_IZQ CORCHETE_DER tipo LLAVE_IZQ lista_valores LLAVE_DER
+#   tipo      : CORCHETE_IZQ CORCHETE_DER tipo      (para parámetros, Tabla 9)
+#
+# TODO(Danilogb18): sección 4, "Estructuras de Control" (for clásico y for range).
+#   sentencia   : for_clasico | for_range | incremento
+#   for_clasico : FOR declaracion_corta PUNTO_COMA expresion PUNTO_COMA post_for bloque
+#   for_range   : FOR ID COMA ID ASIGNA_CORTA RANGE ID bloque
+#   post_for    : incremento | asignacion
+#   incremento  : ID INCREMENTO | ID DECREMENTO
+#
+# TODO(Danilogb18): sección 4, "Declaraciones de Funciones" (múltiple retorno).
+#   sentencia            : func_varios_retornos
+#   func_varios_retornos : FUNC ID PAREN_IZQ parametros PAREN_DER PAREN_IZQ lista_tipos PAREN_DER bloque
+#   lista_tipos          : tipo | lista_tipos COMA tipo
+
+# ===== FIN aporte: Danilo García (Danilogb18) =====
+
+
+# ===== INICIO aporte: Samuel Echeverría (SamuelEcheverria) =====
+# Reglas asignadas (Tabla 11 del documento):
+#   - Variable declaración de constante: `const PI = 3.14`
+#   - Estructura de datos: arreglo  `[3]int{1, 2, 3}`
+#   - Sentencia if / else if / else
+#   - Funciones sin retorno: `func saludar() { ... }`
+# Además (reparto del avance 2):
+#   - Expresiones aritméticas
+#   - switch / case / default
+#
+# Tokens que usan `%prec` en sus reglas (p. ej. "UMINUS" para el '-' unario).
+# Se agregan a la precedencia al final del archivo; PLY no construye el
+# parser si un nombre está en la precedencia y ninguna regla lo usa, por eso
+# la lista empieza vacía.
+precedencia_SamuelEcheverria: list[str] = []
+
+# TODO(SamuelEcheverria): sección 4, "Declaración de Variables" (constante).
+#   sentencia         : declaracion_const
+#   declaracion_const : CONST ID ASIGNA expresion
+#
+# TODO(SamuelEcheverria): sección 4, "Estructuras de Datos" (arreglo).
+#   expresion : arreglo
+#   arreglo   : CORCHETE_IZQ ENTERO CORCHETE_DER tipo LLAVE_IZQ lista_valores LLAVE_DER
+#   tipo      : CORCHETE_IZQ ENTERO CORCHETE_DER tipo      (para parámetros, Tabla 9)
+#
+# TODO(SamuelEcheverria): sección 4, "Estructuras de Control" (if).
+#   sentencia    : sentencia_if
+#   sentencia_if : IF expresion bloque
+#                | IF expresion bloque ELSE bloque
+#                | IF expresion bloque ELSE sentencia_if
+#
+# TODO(SamuelEcheverria): sección 4, "Declaraciones de Funciones" (sin retorno).
+#   sentencia        : func_sin_retorno
+#   func_sin_retorno : FUNC ID PAREN_IZQ parametros PAREN_DER bloque
+#
+# TODO(SamuelEcheverria): sección 4, "Expresiones Aritméticas". Los operandos
+# simples (ENTERO, DECIMAL, CADENA, ID, paréntesis) ya están en la estructura común.
+#   expresion : expresion MAS expresion | expresion MENOS expresion
+#             | expresion POR expresion | expresion DIVIDIDO expresion
+#             | expresion MODULO expresion
+#             | MENOS expresion %prec UMINUS      (y agregar "UMINUS" a precedencia_SamuelEcheverria)
 #
 # TODO(SamuelEcheverria): sección 4, "Estructuras de Control" (switch).
 #   sentencia        : sentencia_switch
@@ -452,15 +491,6 @@ precedencia_Danilogb18: list[str] = []
 #   casos            : caso | casos caso
 #   caso             : CASE expresion DOS_PUNTOS sentencias
 #                    | DEFAULT DOS_PUNTOS sentencias
-#
-# TODO(SamuelEcheverria): sección 4, "Declaraciones de Funciones" (varios retornos).
-#   sentencia        : declaracion_func
-#   declaracion_func : FUNC ID PAREN_IZQ parametros PAREN_DER PAREN_IZQ lista_tipos PAREN_DER bloque
-#   lista_tipos      : tipo | lista_tipos COMA tipo
-#
-# Opcional (no está en el documento; ver "Pendientes" arriba):
-#   declaracion_multiple : lista_ids ASIGNA_CORTA expresion
-#   lista_ids            : ID COMA ID | lista_ids COMA ID
 
 # ===== FIN aporte: Samuel Echeverría (SamuelEcheverria) =====
 
@@ -477,7 +507,7 @@ precedence = (
     ("left", "IGUAL", "DISTINTO", "MENOR", "MAYOR", "MENOR_IGUAL", "MAYOR_IGUAL"),
     ("left", "MAS", "MENOS"),
     ("left", "POR", "DIVIDIDO", "MODULO"),
-    ("right", "NOT", *precedencia_Danilogb18),
+    ("right", "NOT", *precedencia_SamuelEcheverria),
 )
 
 
