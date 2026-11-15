@@ -160,9 +160,14 @@ def p_sentencia_vacia(p):
 
 def p_sentencia_error(p):
     """sentencia : error"""
-    # Permite seguir analizando tras un error y reportar más de uno; p_error
-    # ya registró el mensaje.
+    # Permite seguir analizando tras un error y reportar más de uno; p_error ya registró el mensaje.
+    global _ultimo_token_error
+    token = _memoria.actual if _memoria else None
+    if token is not None and token is _ultimo_token_error:
+        token.type = "PUNTO_COMA"
+    _ultimo_token_error = token
     p[0] = Nodo("Error", "", p.lineno(1), error="syn")
+
 
 
 def p_bloque(p):
@@ -408,37 +413,132 @@ def _fin_de(tok) -> int:
 #   - for clásico: `for i := 0; i < 10; i++ { ... }`
 #   - Incremento y decremento: `x++`, `x--`
 #
-# TODO(Danilogb18): sección 4, "Declaración de Variables" (asignación y forma corta).
-#   sentencia         : asignacion | declaracion_corta
-#   asignacion        : ID ASIGNA expresion
-#                     | ID MAS_ASIGNA expresion | ID MENOS_ASIGNA expresion
-#                     | ID POR_ASIGNA expresion | ID DIV_ASIGNA expresion
-#   declaracion_corta : ID ASIGNA_CORTA expresion
-#
-# TODO(Danilogb18): sección 4, "Expresiones Booleanas". TRUE y FALSE ya están
-# en la estructura común; la precedencia ya incluye estos operadores.
-#   expresion : expresion IGUAL expresion | expresion DISTINTO expresion
-#             | expresion MENOR expresion | expresion MAYOR expresion
-#             | expresion MENOR_IGUAL expresion | expresion MAYOR_IGUAL expresion
-#             | expresion AND expresion | expresion OR expresion
-#             | NOT expresion
-#
-# TODO(Danilogb18): sección 4, "Estructuras de Datos" (slice).
-#   expresion : slice
-#   slice     : CORCHETE_IZQ CORCHETE_DER tipo LLAVE_IZQ lista_valores LLAVE_DER
-#   tipo      : CORCHETE_IZQ CORCHETE_DER tipo      (para parámetros, Tabla 9)
-#
-# TODO(Danilogb18): sección 4, "Estructuras de Control" (for clásico y for range).
-#   sentencia   : for_clasico | for_range | incremento
-#   for_clasico : FOR declaracion_corta PUNTO_COMA expresion PUNTO_COMA post_for bloque
-#   for_range   : FOR ID COMA ID ASIGNA_CORTA RANGE ID bloque
-#   post_for    : incremento | asignacion
-#   incremento  : ID INCREMENTO | ID DECREMENTO
-#
-# TODO(Danilogb18): sección 4, "Declaraciones de Funciones" (múltiple retorno).
-#   sentencia            : func_varios_retornos
-#   func_varios_retornos : FUNC ID PAREN_IZQ parametros PAREN_DER PAREN_IZQ lista_tipos PAREN_DER bloque
-#   lista_tipos          : tipo | lista_tipos COMA tipo
+
+def p_sentencia_Danilogb18(p):
+    """sentencia : asignacion
+                 | declaracion_corta
+                 | incremento
+                 | for_clasico
+                 | for_range
+                 | func_varios_retornos"""
+    # Agrega mis construcciones a la lista de sentencias válidas. Cada una ya construye su propio Nodo, así que solo se pasa hacia arriba.
+    p[0] = p[1]
+
+
+# Declaración de variables: asignación simple/compuesta y declaración corta
+
+def p_asignacion(p):
+    """asignacion : ID ASIGNA expresion
+                  | ID MAS_ASIGNA expresion
+                  | ID MENOS_ASIGNA expresion
+                  | ID POR_ASIGNA expresion
+                  | ID DIV_ASIGNA expresion"""
+    p[0] = Nodo("AssignStmt", p[2], p.lineno(1),[Nodo("Ident", p[1], p.lineno(1)), p[3]])
+
+
+def p_declaracion_corta(p):
+    """declaracion_corta : ID ASIGNA_CORTA expresion"""
+    # Declaración corta `x := 5`: declara la variable y deduce su tipo del
+    # valor. Es un no terminal propio (no va dentro de `asignacion`) porque el for clásico la usa como inicialización y el semántico la trata distinto: 
+    # aquí se declara un símbolo nuevo, en `=` se usa uno existente.
+    p[0] = Nodo("ShortVarDecl", ":=", p.lineno(1), [Nodo("Ident", p[1], p.lineno(1)), p[3]])
+
+
+# Expresiones booleanas: comparaciones y conectores lógicos
+
+def p_expresion_booleana(p):
+    """expresion : expresion IGUAL expresion
+                 | expresion DISTINTO expresion
+                 | expresion MENOR expresion
+                 | expresion MAYOR expresion
+                 | expresion MENOR_IGUAL expresion
+                 | expresion MAYOR_IGUAL expresion
+                 | expresion AND expresion
+                 | expresion OR expresion"""
+    # la tabla `precedence` del final resuelve el orden: || < && < comparaciones.
+    p[0] = Nodo("BinaryExpr", p[2], p.lineno(2), [p[1], p[3]])
+
+
+def p_expresion_not(p):
+    """expresion : NOT expresion"""
+    # Negación lógica `!activo`. NOT ya está en la precedencia con asociatividad
+    p[0] = Nodo("UnaryExpr", "!", p.lineno(1), [p[2]])
+
+
+# Estructura de datos: slice
+
+def p_expresion_slice(p):
+    """expresion : slice"""
+    # Un literal de slice puede ir donde vaya cualquier valor: `l := []int{1, 2}`.
+    p[0] = p[1]
+
+
+def p_slice(p):
+    """slice : CORCHETE_IZQ CORCHETE_DER tipo LLAVE_IZQ lista_valores LLAVE_DER"""
+    # Literal de slice `[]float64{8.5, 9.0}`. A diferencia del arreglo, los corchetes van vacíos (sin tamaño). `lista_valores` es de la estructura común.
+    p[0] = Nodo("CompositeLit", "[]" + p[3].dato, p.lineno(1), p[5])
+
+
+def p_tipo_slice(p):
+    """tipo : CORCHETE_IZQ CORCHETE_DER tipo"""
+    # Tipo slice para parámetros y declaraciones: `func f(notas []float64)`.
+    # Es recursivo (`tipo` dentro de `tipo`), así también vale `[][]int`.
+    # El dato guarda el tipo completo como texto para que el semántico lo compare.
+    p[0] = Nodo("Type", "[]" + p[3].dato, p.lineno(1))
+
+
+# Estructuras de control: incremento, for clásico y for range
+
+def p_incremento(p):
+    """incremento : ID INCREMENTO
+                  | ID DECREMENTO"""
+    # `x++` y `x--`. En Go son sentencias, no expresiones (no existe `y = x++`),
+    # por eso van en `sentencia` y no en `expresion`.
+    p[0] = Nodo("IncDecStmt", p[2], p.lineno(1), [Nodo("Ident", p[1], p.lineno(1))])
+
+
+def p_for_clasico(p):
+    """for_clasico : FOR declaracion_corta PUNTO_COMA expresion PUNTO_COMA post_for bloque"""
+    # for de tres partes: `for i := 0; i < 10; i++ { ... }`.
+    # Hijos: inicialización, condición, paso y cuerpo, en ese orden.
+    # Los ';' aquí son obligatorios (separan las tres partes), a diferencia
+    # del ';' opcional al final de una sentencia.
+    p[0] = Nodo("ForStmt", "clásico", p.lineno(1), [p[2], p[4], p[6], p[7]])
+
+
+def p_post_for(p):
+    """post_for : incremento
+                | asignacion"""
+    # Lo que se ejecuta al final de cada vuelta: `i++` o `i += 2`.
+    p[0] = p[1]
+
+
+def p_for_range(p):
+    """for_range : FOR ID COMA ID ASIGNA_CORTA RANGE ID bloque"""
+    p[0] = Nodo("ForStmt", "range", p.lineno(1), [
+        Nodo("Ident", p[2], p.lineno(2)),
+        Nodo("Ident", p[4], p.lineno(4)),
+        Nodo("Ident", p[7], p.lineno(7)),
+        p[8],
+    ])
+
+
+# Funciones con múltiple retorno
+
+def p_func_varios_retornos(p):
+    """func_varios_retornos : FUNC ID PAREN_IZQ parametros PAREN_DER PAREN_IZQ lista_tipos PAREN_DER bloque"""
+    p[0] = Nodo("FuncDecl", p[2], p.lineno(1), [
+        Nodo("Params", "", p.lineno(3), p[4]),
+        Nodo("Results", "", p.lineno(6), p[7]),
+        p[9],
+    ])
+
+
+def p_lista_tipos(p):
+    """lista_tipos : tipo
+                   | lista_tipos COMA tipo"""
+    # Tipos de retorno separados por coma: `(float64, float64, bool)`. Recursiva por la izquierda, igual que lista_valores de la estructura común.
+    p[0] = [p[1]] if len(p) == 2 else p[1] + [p[3]]
 
 # ===== FIN aporte: Danilo García (Danilogb18) =====
 
