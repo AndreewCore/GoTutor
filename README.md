@@ -73,12 +73,14 @@ En el avance 1 (solo léxico) lo esperado es `OK (skipped=13)`: los 6 casos de
 `test_ejemplos.py` necesitan el sintáctico y los 7 de `test_integracion_ply.py`
 se desactivan porque `lexico.py` ya tiene reglas.
 
+En el avance 2 queda una falla conocida en `test_ejemplos.py`: el ejemplo
+`ambitos` usa la declaración múltiple (`resultado, ok := dividir(10, 4)`), que
+está fuera del alcance de la gramática (ver "Avance 2").
+
 ## Avance 1: analizador léxico
 
 **Estado: completo.** El analizador léxico (`backend/analizador/lexico.py`,
-con PLY) reconoce el subconjunto de Go del proyecto. El sintáctico y el
-semántico corresponden a los siguientes avances, así que en la interfaz salen
-como "Función no implementada".
+con PLY) reconoce el subconjunto de Go del proyecto.
 
 | Integrante | Usuario | Reglas léxicas | Algoritmos de prueba |
 |---|---|---|---|
@@ -94,6 +96,39 @@ en `backend/logs/`. Para reproducir uno:
 cd backend
 python probar_lexico.py ../algoritmos/algoritmo3_error1.go -u SamuelEcheverria
 ```
+
+## Avance 2: analizador sintáctico
+
+El analizador sintáctico (`backend/analizador/sintactico.py`, con `ply.yacc`)
+construye el árbol que se dibuja en la interfaz y reporta cada error de
+sintaxis con línea, columna, un mensaje en español y una sugerencia. Tras un
+error sigue analizando, así que un programa puede mostrar varios errores. El
+semántico corresponde al avance 3, así que en la interfaz sale como "Función
+no implementada".
+
+Las reglas salen de la Tabla 11 del documento del proyecto más un reparto
+extra del avance 2 (detalle en [CONTRIBUTING.md](CONTRIBUTING.md)):
+
+| Integrante | Usuario | Reglas sintácticas | Algoritmos de prueba |
+|---|---|---|---|
+| Paúl Rodríguez | `AndreewCore` | Variable con tipo (y sin tipo), for condicional e infinito, map, funciones con retorno, `fmt` (impresión y lectura), acceso por índice, structs y métodos | `algoritmo1.go`, `algoritmo1_errorsyn1.go`, `algoritmo1_errorsyn2.go` |
+| Danilo García | `Danilogb18` | Asignación (simple y compuesta), slice, for range, funciones con múltiple retorno, expresiones booleanas, `:=`, for clásico, `x++` / `x--` | `algoritmo2.go`, `algoritmo2_errorsyn1.go`, `algoritmo2_errorsyn2.go` |
+| Samuel Echeverría | `SamuelEcheverria` | Constante, arreglo, if / else, funciones sin retorno, expresiones aritméticas, `switch` | `algoritmo3.go`, `algoritmo3_errorsyn1.go`, `algoritmo3_errorsyn2.go` |
+
+Cada integrante aporta su programa válido, que pasa el sintáctico sin errores,
+y dos versiones con errores de sintaxis. Cada archivo con errores lista en su
+encabezado los errores esperados y su línea. Los logs están en `backend/logs/`
+(`sintactico-<usuario>-<fecha>-<hora>.txt`). Para reproducir uno:
+
+```bash
+cd backend
+python probar_sintactico.py ../algoritmos/algoritmo1_errorsyn1.go -u AndreewCore
+```
+
+Limitaciones (detalle al inicio de `sintactico.py`): no hay inserción
+automática de `;` (el `;` es opcional y los saltos de línea se ignoran), y
+quedan fuera la conversión explícita `float64(x)`, la asignación a un índice
+(`m["a"] += 1`) y la declaración múltiple (`a, b := f()`).
 
 ## Logs
 
