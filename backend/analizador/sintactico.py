@@ -431,6 +431,97 @@ precedencia_Danilogb18: list[str] = []
 #   - Tipo de función: con varios retornos  `func dividir(...) (float64, bool) { ... }`
 #   - Condiciones con conectores lógicos y comparaciones
 #
+
+def p_sentencia_SamuelEcheverria(p):
+    """sentencia : declaracion_const
+                 | declaracion_corta
+                 | sentencia_if
+                 | sentencia_switch
+                 | declaracion_func_sin_retorno"""
+    p[0] = p[1]
+
+
+def p_expresion_SamuelEcheverria(p):
+    """expresion : arreglo
+                 | acceso_indice"""
+    p[0] = p[1]
+
+
+def p_tipo_SamuelEcheverria(p):
+    """tipo : CORCHETE_IZQ ENTERO CORCHETE_DER tipo"""
+    p[0] = Nodo("Type", f"[{p[2]}]{p[4].dato}", p.lineno(1), [p[4]])
+
+
+# 1. Declaración de constante y declaración corta (simple y múltiple)
+def p_declaracion_const(p):
+    """declaracion_const : CONST ID ASIGNA expresion"""
+    p[0] = Nodo("ConstDecl", p[2], p.lineno(1), [p[4]])
+
+
+def p_declaracion_corta(p):
+    """declaracion_corta : ID ASIGNA_CORTA expresion
+                         | lista_ids ASIGNA_CORTA expresion"""
+    if isinstance(p[1], list):
+        nombres = ", ".join(n.dato for n in p[1])
+        p[0] = Nodo("ShortVarDecl", nombres, p.lineno(2), [*p[1], p[3]])
+    else:
+        p[0] = Nodo("ShortVarDecl", p[1], p.lineno(1), [p[3]])
+
+
+def p_lista_ids(p):
+    """lista_ids : ID COMA ID
+                 | lista_ids COMA ID"""
+    if len(p) == 4 and not isinstance(p[1], list):
+        p[0] = [Nodo("Ident", p[1], p.lineno(1)), Nodo("Ident", p[3], p.lineno(3))]
+    else:
+        p[0] = p[1] + [Nodo("Ident", p[3], p.lineno(3))]
+
+
+# 2. Estructura de datos: Arreglos y acceso por índice
+def p_arreglo(p):
+    """arreglo : CORCHETE_IZQ ENTERO CORCHETE_DER tipo LLAVE_IZQ lista_valores LLAVE_DER"""
+    p[0] = Nodo("ArrayLit", f"[{p[2]}]{p[4].dato}", p.lineno(1), [p[4], *p[6]])
+
+
+def p_acceso_indice(p):
+    """acceso_indice : ID CORCHETE_IZQ expresion CORCHETE_DER"""
+    p[0] = Nodo("IndexExpr", p[1], p.lineno(1), [p[3]])
+
+
+# 3. Estructura de control: Sentencia if / else / else if y switch
+def p_sentencia_if(p):
+    """sentencia_if : IF expresion bloque
+                    | IF expresion bloque ELSE bloque
+                    | IF expresion bloque ELSE sentencia_if"""
+    hijos = [p[2], p[3]] if len(p) == 4 else [p[2], p[3], p[5]]
+    p[0] = Nodo("IfStmt", "", p.lineno(1), hijos)
+
+
+def p_sentencia_switch(p):
+    """sentencia_switch : SWITCH expresion LLAVE_IZQ casos LLAVE_DER"""
+    p[0] = Nodo("SwitchStmt", "", p.lineno(1), [p[2], *p[4]])
+
+
+def p_casos(p):
+    """casos : caso
+             | casos caso"""
+    p[0] = [p[1]] if len(p) == 2 else p[1] + [p[2]]
+
+
+def p_caso(p):
+    """caso : CASE expresion DOS_PUNTOS sentencias
+            | DEFAULT DOS_PUNTOS sentencias"""
+    if p.slice[1].type == "CASE":
+        p[0] = Nodo("CaseClause", "case", p.lineno(1), [p[2], *p[4]])
+    else:
+        p[0] = Nodo("CaseClause", "default", p.lineno(1), p[3])
+
+
+# 4. Funciones sin retorno
+def p_declaracion_func_sin_retorno(p):
+    """declaracion_func_sin_retorno : FUNC ID PAREN_IZQ parametros PAREN_DER bloque"""
+    p[0] = Nodo("FuncDecl", p[2], p.lineno(1), [*p[4], p[6]])
+    
 # TODO(SamuelEcheverria): sección 4, "Expresiones Booleanas". TRUE y FALSE ya
 # están en la estructura común; la precedencia ya incluye estos operadores.
 #   expresion : expresion IGUAL expresion | expresion DISTINTO expresion
