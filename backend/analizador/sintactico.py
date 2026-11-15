@@ -64,17 +64,18 @@ implementa; se anota aquí para explicarlo en la sustentación.
     agrega su forma a `tipo`.
   - Structs y métodos: la entrega pide clases, propiedades y métodos y el
     documento no los define (AndreewCore).
+  - `var total = 10` (var sin tipo): la Tabla 11 solo asigna la variable con
+    tipo, pero la sección 4 la incluye en `declaracion_var` (AndreewCore).
 
   Fuera del alcance (están en la sección 4 o en los algoritmos, pero no en
   la Tabla 11 ni en el reparto):
-  - `var total = 10` (var sin tipo): solo se asignó la variable con tipo.
-  - Conversión explícita `float64(x)`. algoritmo1.go (L15) y algoritmo2.go
-    (L23) la usan: hay que reescribir esas líneas o fallarán.
-  - Asignar a un índice: `stock["lapiz"] += llegada` (algoritmo1.go L37).
-    `asignacion` solo admite un ID a la izquierda.
-  - Declaración múltiple: `suma, promedio, perfecta := estadisticas(notas)`
-    (algoritmo2.go L38). Sin ella, el resultado de una función con varios
-    retornos solo se puede devolver, no guardar.
+  - Conversión explícita `float64(x)`.
+  - Asignar a un índice: `stock["lapiz"] += llegada`. `asignacion` solo
+    admite un ID a la izquierda.
+  - Declaración múltiple: `suma, promedio, perfecta := estadisticas(notas)`.
+    Sin ella, el resultado de una función con varios retornos solo se puede
+    devolver o pasar a otra función, no guardar. El ejemplo `ambitos` de la
+    interfaz la usa y por eso falla en test_ejemplos.py.
 
   Limitaciones aceptadas:
   - Sin inserción automática de ';': los saltos de línea se ignoran y ';' es
@@ -345,6 +346,7 @@ def _fin_de(tok) -> int:
 # ===== INICIO aporte: Paúl Rodríguez (AndreewCore) =====
 # Reglas asignadas (Tabla 11 del documento):
 #   - Variable con tipo: `var edad int`, `var nombre string = "Ana"`
+#     (y sin tipo, `var total = 10`, porque la sección 4 la incluye)
 #   - Sentencia for condicional: `for total < 100 { ... }`
 #   - Estructura de datos: map  `map[string]int{"Ana": 20}`
 #   - Funciones con retorno: `func suma(a int, b int) int { ... }`
@@ -368,9 +370,15 @@ def p_sentencia_AndreewCore(p):
 
 def p_declaracion_var(p):
     """declaracion_var : VAR ID tipo
-                       | VAR ID tipo ASIGNA expresion"""
+                       | VAR ID tipo ASIGNA expresion
+                       | VAR ID ASIGNA expresion"""
     # Sin valor, Go le da el valor cero del tipo: el nodo solo lleva el tipo.
-    hijos = [p[3]] if len(p) == 4 else [p[3], p[5]]
+    # Sin tipo, Go lo infiere del valor: el nodo solo lleva la expresión y el
+    # semántico deduce el tipo.
+    if p.slice[3].type == "ASIGNA":
+        hijos = [p[4]]
+    else:
+        hijos = [p[3]] if len(p) == 4 else [p[3], p[5]]
     p[0] = Nodo("VarDecl", p[2], p.lineno(1), hijos)
 
 
