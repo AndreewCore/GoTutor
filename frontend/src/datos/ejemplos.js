@@ -135,13 +135,13 @@ func dividir(a float64, b float64) (float64, bool) {
 }
 
 func main() {
-	resultado, ok := dividir(10, 4)
-	if ok {
-		mensaje := "Resultado:"
-	}
-	fmt.Println(mensaje, resultado)
-	var total float64 = dividir(8, 2)
-	fmt.Println(total)
+    ok := true
+    if ok {
+        mensaje := "Resultado:"
+    }
+    fmt.Println(mensaje)
+    var total float64 = dividir(8, 2)
+    fmt.Println(total)
 }`
   }
 ];
