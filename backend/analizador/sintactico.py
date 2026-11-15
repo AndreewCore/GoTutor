@@ -446,27 +446,46 @@ def _fin_de(tok) -> int:
 # ===== FIN aporte: Danilo García (Danilogb18) =====
 
 
+
 # ===== INICIO aporte: Samuel Echeverría (SamuelEcheverria) =====
-# Reglas asignadas:
-#   - Estructura de datos: map  `map[string]int{"Ana": 20}`
-#   - Estructura de control: switch / case / default
-#   - Tipo de función: con varios retornos  `func dividir(...) (float64, bool) { ... }`
-#   - Condiciones con conectores lógicos y comparaciones
+# Reglas asignadas (Tabla 11 del documento):
+#   - Variable declaración de constante: `const PI = 3.14`
+#   - Estructura de datos: arreglo  `[3]int{1, 2, 3}`
+#   - Sentencia if / else if / else
+#   - Funciones sin retorno: `func saludar() { ... }`
+# Además (reparto del avance 2):
+#   - Expresiones aritméticas
+#   - switch / case / default
 #
+# Tokens que usan `%prec` en sus reglas (p. ej. "UMINUS" para el '-' unario).
+# Se agregan a la precedencia al final del archivo; PLY no construye el
+# parser si un nombre está en la precedencia y ninguna regla lo usa, por eso
+# la lista empieza vacía.
+precedencia_SamuelEcheverria: list[str] = ["UMINUS"]
+
 
 def p_sentencia_SamuelEcheverria(p):
     """sentencia : declaracion_const
-                 | declaracion_corta
                  | sentencia_if
-                 | sentencia_switch
-                 | declaracion_func_sin_retorno"""
+                 | func_sin_retorno
+                 | sentencia_switch"""
     p[0] = p[1]
 
 
 def p_expresion_SamuelEcheverria(p):
     """expresion : arreglo
-                 | acceso_indice"""
-    p[0] = p[1]
+                 | expresion MAS expresion
+                 | expresion MENOS expresion
+                 | expresion POR expresion
+                 | expresion DIVIDIDO expresion
+                 | expresion MODULO expresion
+                 | MENOS expresion %prec UMINUS"""
+    if len(p) == 2:
+        p[0] = p[1]
+    elif len(p) == 3:
+        p[0] = Nodo("UnaryExpr", p[1], p.lineno(1), [p[2]])
+    else:
+        p[0] = Nodo("BinaryExpr", p[2], p.lineno(2), [p[1], p[3]])
 
 
 def p_tipo_SamuelEcheverria(p):
@@ -474,43 +493,19 @@ def p_tipo_SamuelEcheverria(p):
     p[0] = Nodo("Type", f"[{p[2]}]{p[4].dato}", p.lineno(1), [p[4]])
 
 
-# 1. Declaración de constante y declaración corta (simple y múltiple)
+# 1. Declaración de constante
 def p_declaracion_const(p):
     """declaracion_const : CONST ID ASIGNA expresion"""
     p[0] = Nodo("ConstDecl", p[2], p.lineno(1), [p[4]])
 
 
-def p_declaracion_corta(p):
-    """declaracion_corta : ID ASIGNA_CORTA expresion
-                         | lista_ids ASIGNA_CORTA expresion"""
-    if isinstance(p[1], list):
-        nombres = ", ".join(n.dato for n in p[1])
-        p[0] = Nodo("ShortVarDecl", nombres, p.lineno(2), [*p[1], p[3]])
-    else:
-        p[0] = Nodo("ShortVarDecl", p[1], p.lineno(1), [p[3]])
-
-
-def p_lista_ids(p):
-    """lista_ids : ID COMA ID
-                 | lista_ids COMA ID"""
-    if len(p) == 4 and not isinstance(p[1], list):
-        p[0] = [Nodo("Ident", p[1], p.lineno(1)), Nodo("Ident", p[3], p.lineno(3))]
-    else:
-        p[0] = p[1] + [Nodo("Ident", p[3], p.lineno(3))]
-
-
-# 2. Estructura de datos: Arreglos y acceso por índice
+# 2. Estructura de datos: Arreglos
 def p_arreglo(p):
     """arreglo : CORCHETE_IZQ ENTERO CORCHETE_DER tipo LLAVE_IZQ lista_valores LLAVE_DER"""
     p[0] = Nodo("ArrayLit", f"[{p[2]}]{p[4].dato}", p.lineno(1), [p[4], *p[6]])
 
 
-def p_acceso_indice(p):
-    """acceso_indice : ID CORCHETE_IZQ expresion CORCHETE_DER"""
-    p[0] = Nodo("IndexExpr", p[1], p.lineno(1), [p[3]])
-
-
-# 3. Estructura de control: Sentencia if / else / else if y switch
+# 3. Estructura de control: Sentencia if / else / else if
 def p_sentencia_if(p):
     """sentencia_if : IF expresion bloque
                     | IF expresion bloque ELSE bloque
@@ -519,6 +514,13 @@ def p_sentencia_if(p):
     p[0] = Nodo("IfStmt", "", p.lineno(1), hijos)
 
 
+# 4. Funciones sin retorno
+def p_func_sin_retorno(p):
+    """func_sin_retorno : FUNC ID PAREN_IZQ parametros PAREN_DER bloque"""
+    p[0] = Nodo("FuncDecl", p[2], p.lineno(1), [*p[4], p[6]])
+
+
+# 5. Estructura de control: Sentencia switch / case / default
 def p_sentencia_switch(p):
     """sentencia_switch : SWITCH expresion LLAVE_IZQ casos LLAVE_DER"""
     p[0] = Nodo("SwitchStmt", "", p.lineno(1), [p[2], *p[4]])
@@ -538,88 +540,6 @@ def p_caso(p):
     else:
         p[0] = Nodo("CaseClause", "default", p.lineno(1), p[3])
 
-
-# 4. Funciones sin retorno
-def p_declaracion_func_sin_retorno(p):
-    """declaracion_func_sin_retorno : FUNC ID PAREN_IZQ parametros PAREN_DER bloque"""
-    p[0] = Nodo("FuncDecl", p[2], p.lineno(1), [*p[4], p[6]])
-    
-# TODO(SamuelEcheverria): sección 4, "Expresiones Booleanas". TRUE y FALSE ya
-# están en la estructura común; la precedencia ya incluye estos operadores.
-#   expresion : expresion IGUAL expresion | expresion DISTINTO expresion
-#             | expresion MENOR expresion | expresion MAYOR expresion
-#             | expresion MENOR_IGUAL expresion | expresion MAYOR_IGUAL expresion
-#             | expresion AND expresion | expresion OR expresion
-#             | NOT expresion
-#
-# TODO(Danilogb18): sección 4, "Estructuras de Datos" (slice).
-#   expresion : slice
-#   slice     : CORCHETE_IZQ CORCHETE_DER tipo LLAVE_IZQ lista_valores LLAVE_DER
-#   tipo      : CORCHETE_IZQ CORCHETE_DER tipo      (para parámetros, Tabla 9)
-#
-# TODO(Danilogb18): sección 4, "Estructuras de Control" (for clásico y for range).
-#   sentencia   : for_clasico | for_range | incremento
-#   for_clasico : FOR declaracion_corta PUNTO_COMA expresion PUNTO_COMA post_for bloque
-#   for_range   : FOR ID COMA ID ASIGNA_CORTA RANGE ID bloque
-#   post_for    : incremento | asignacion
-#   incremento  : ID INCREMENTO | ID DECREMENTO
-#
-# TODO(Danilogb18): sección 4, "Declaraciones de Funciones" (múltiple retorno).
-#   sentencia            : func_varios_retornos
-#   func_varios_retornos : FUNC ID PAREN_IZQ parametros PAREN_DER PAREN_IZQ lista_tipos PAREN_DER bloque
-#   lista_tipos          : tipo | lista_tipos COMA tipo
-
-# ===== FIN aporte: Danilo García (Danilogb18) =====
-
-
-# ===== INICIO aporte: Samuel Echeverría (SamuelEcheverria) =====
-# Reglas asignadas (Tabla 11 del documento):
-#   - Variable declaración de constante: `const PI = 3.14`
-#   - Estructura de datos: arreglo  `[3]int{1, 2, 3}`
-#   - Sentencia if / else if / else
-#   - Funciones sin retorno: `func saludar() { ... }`
-# Además (reparto del avance 2):
-#   - Expresiones aritméticas
-#   - switch / case / default
-#
-# Tokens que usan `%prec` en sus reglas (p. ej. "UMINUS" para el '-' unario).
-# Se agregan a la precedencia al final del archivo; PLY no construye el
-# parser si un nombre está en la precedencia y ninguna regla lo usa, por eso
-# la lista empieza vacía.
-precedencia_SamuelEcheverria: list[str] = []
-
-# TODO(SamuelEcheverria): sección 4, "Declaración de Variables" (constante).
-#   sentencia         : declaracion_const
-#   declaracion_const : CONST ID ASIGNA expresion
-#
-# TODO(SamuelEcheverria): sección 4, "Estructuras de Datos" (arreglo).
-#   expresion : arreglo
-#   arreglo   : CORCHETE_IZQ ENTERO CORCHETE_DER tipo LLAVE_IZQ lista_valores LLAVE_DER
-#   tipo      : CORCHETE_IZQ ENTERO CORCHETE_DER tipo      (para parámetros, Tabla 9)
-#
-# TODO(SamuelEcheverria): sección 4, "Estructuras de Control" (if).
-#   sentencia    : sentencia_if
-#   sentencia_if : IF expresion bloque
-#                | IF expresion bloque ELSE bloque
-#                | IF expresion bloque ELSE sentencia_if
-#
-# TODO(SamuelEcheverria): sección 4, "Declaraciones de Funciones" (sin retorno).
-#   sentencia        : func_sin_retorno
-#   func_sin_retorno : FUNC ID PAREN_IZQ parametros PAREN_DER bloque
-#
-# TODO(SamuelEcheverria): sección 4, "Expresiones Aritméticas". Los operandos
-# simples (ENTERO, DECIMAL, CADENA, ID, paréntesis) ya están en la estructura común.
-#   expresion : expresion MAS expresion | expresion MENOS expresion
-#             | expresion POR expresion | expresion DIVIDIDO expresion
-#             | expresion MODULO expresion
-#             | MENOS expresion %prec UMINUS      (y agregar "UMINUS" a precedencia_SamuelEcheverria)
-#
-# TODO(SamuelEcheverria): sección 4, "Estructuras de Control" (switch).
-#   sentencia        : sentencia_switch
-#   sentencia_switch : SWITCH expresion LLAVE_IZQ casos LLAVE_DER
-#   casos            : caso | casos caso
-#   caso             : CASE expresion DOS_PUNTOS sentencias
-#                    | DEFAULT DOS_PUNTOS sentencias
 
 # ===== FIN aporte: Samuel Echeverría (SamuelEcheverria) =====
 
