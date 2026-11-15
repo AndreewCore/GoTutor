@@ -353,51 +353,156 @@ def _fin_de(tok) -> int:
 #   - Acceso por índice: `numeros[0]`, `edades["Ana"]`
 #   - for infinito: `for { ... }`
 #   - Clases: struct (propiedades) y métodos con receptor
-#
-# TODO(AndreewCore): sección 4, "Declaración de Variables" (con tipo).
-#   sentencia       : declaracion_var
-#   declaracion_var : VAR ID tipo
-#                   | VAR ID tipo ASIGNA expresion
-#
-# TODO(AndreewCore): sección 4, "Estructuras de Control" (for condicional e infinito).
-#   sentencia       : for_condicional | for_infinito
-#   for_condicional : FOR expresion bloque
-#   for_infinito    : FOR bloque
-#
-# TODO(AndreewCore): sección 4, "Estructuras de Datos" (map).
-#   expresion   : mapa
-#   mapa        : MAP CORCHETE_IZQ tipo CORCHETE_DER tipo LLAVE_IZQ lista_pares LLAVE_DER
-#   lista_pares : par | lista_pares COMA par
-#   par         : expresion DOS_PUNTOS expresion
-#   tipo        : MAP CORCHETE_IZQ tipo CORCHETE_DER tipo      (para parámetros, Tabla 9)
-#
-# TODO(AndreewCore): sección 4, "Declaraciones de Funciones" (con un retorno).
-#   sentencia        : func_con_retorno
-#   func_con_retorno : FUNC ID PAREN_IZQ parametros PAREN_DER tipo bloque
-#   (`return` ya está en la estructura común.)
-#
-# TODO(AndreewCore): sección 4, "Impresión y solicitud de datos".
-#   llamada   : ID PUNTO ID PAREN_IZQ argumentos PAREN_DER
-#   expresion : AMPERSAND ID
-#
-# TODO(AndreewCore): sección 4, "Estructuras de Datos" (acceso por índice).
-#   expresion     : acceso_indice
-#   acceso_indice : ID CORCHETE_IZQ expresion CORCHETE_DER
-#   (Sirve para los arreglos de SamuelEcheverria, los slices de Danilogb18 y los maps.)
-#
-# TODO(AndreewCore): clases (no están en el documento; las pide la entrega).
-#   sentencia          : declaracion_struct | declaracion_metodo
-#   declaracion_struct : TYPE ID STRUCT LLAVE_IZQ campos LLAVE_DER
-#   campos             : campo | campos campo
-#   campo              : ID tipo
-#   declaracion_metodo : FUNC PAREN_IZQ ID ID PAREN_DER ID PAREN_IZQ parametros PAREN_DER bloque
-#                      | FUNC PAREN_IZQ ID ID PAREN_DER ID PAREN_IZQ parametros PAREN_DER tipo bloque
-#   expresion          : ID PUNTO ID                                   (leer una propiedad)
-#   (La llamada `p.metodo()` ya queda cubierta por la llamada con prefijo de fmt.)
-#   Cuidado: `tipo : ID` (para `var p Persona`) choca con la llamada `f(x)`,
-#   y un literal `Persona{...}` como expresión general choca con `for x {`.
-#   Si se agregan, que sea con reglas propias, p. ej.
-#   `declaracion_corta : ID ASIGNA_CORTA ID LLAVE_IZQ ... LLAVE_DER`.
+
+def p_sentencia_AndreewCore(p):
+    """sentencia : declaracion_var
+                 | for_condicional
+                 | for_infinito
+                 | func_con_retorno
+                 | declaracion_struct
+                 | declaracion_metodo"""
+    p[0] = p[1]
+
+
+# --- Paso 1: variable con tipo ---------------------------------------------
+
+def p_declaracion_var(p):
+    """declaracion_var : VAR ID tipo
+                       | VAR ID tipo ASIGNA expresion"""
+    # Sin valor, Go le da el valor cero del tipo: el nodo solo lleva el tipo.
+    hijos = [p[3]] if len(p) == 4 else [p[3], p[5]]
+    p[0] = Nodo("VarDecl", p[2], p.lineno(1), hijos)
+
+
+def p_declaracion_var_struct(p):
+    """declaracion_var : VAR ID ID
+                       | VAR ID ID ASIGNA literal_struct"""
+    # Regla aparte para `var a Persona`: agregar `tipo : ID` choca con la
+    # llamada `f(x)`, y aquí el ID solo puede ser el nombre de un struct.
+    tipo = Nodo("Type", p[3], p.lineno(3))
+    hijos = [tipo] if len(p) == 4 else [tipo, p[5]]
+    p[0] = Nodo("VarDecl", p[2], p.lineno(1), hijos)
+
+
+# --- Paso 2: for condicional e infinito -------------------------------------
+
+def p_for_condicional(p):
+    """for_condicional : FOR expresion bloque"""
+    p[0] = Nodo("ForStmt", "condicional", p.lineno(1), [p[2], p[3]])
+
+
+def p_for_infinito(p):
+    """for_infinito : FOR bloque"""
+    p[0] = Nodo("ForStmt", "infinito", p.lineno(1), [p[2]])
+
+
+# --- Paso 3: map ------------------------------------------------------------
+
+def p_expresion_AndreewCore(p):
+    """expresion : mapa
+                 | acceso_indice
+                 | selector"""
+    p[0] = p[1]
+
+
+def p_mapa(p):
+    """mapa : MAP CORCHETE_IZQ tipo CORCHETE_DER tipo LLAVE_IZQ lista_pares LLAVE_DER
+            | MAP CORCHETE_IZQ tipo CORCHETE_DER tipo LLAVE_IZQ LLAVE_DER"""
+    pares = p[7] if len(p) == 9 else []
+    p[0] = Nodo("MapLit", "", p.lineno(1), [p[3], p[5], *pares])
+
+
+def p_lista_pares(p):
+    """lista_pares : par
+                   | lista_pares COMA par"""
+    p[0] = [p[1]] if len(p) == 2 else p[1] + [p[3]]
+
+
+def p_par(p):
+    """par : expresion DOS_PUNTOS expresion"""
+    p[0] = Nodo("KeyValue", ":", p.lineno(2), [p[1], p[3]])
+
+
+def p_tipo_map(p):
+    """tipo : MAP CORCHETE_IZQ tipo CORCHETE_DER tipo"""
+    # Para parámetros como `m map[string]int` (Tabla 9).
+    p[0] = Nodo("MapType", "map", p.lineno(1), [p[3], p[5]])
+
+
+# --- Paso 4: función con un retorno -----------------------------------------
+
+def p_func_con_retorno(p):
+    """func_con_retorno : FUNC ID PAREN_IZQ parametros PAREN_DER tipo bloque"""
+    # Mismo nodo que las funciones de los demás para que el semántico no
+    # distinga la forma; el tipo de retorno va como hijo "Results".
+    resultados = Nodo("Results", "", p.lineno(6), [p[6]])
+    p[0] = Nodo("FuncDecl", p[2], p.lineno(1), [*p[4], resultados, p[7]])
+
+
+# --- Paso 5: fmt (impresión y lectura) --------------------------------------
+
+def p_llamada_selector(p):
+    """llamada : ID PUNTO ID PAREN_IZQ argumentos PAREN_DER"""
+    # Cubre fmt.Println(...) y también la llamada a un método: p.Saludar().
+    p[0] = Nodo("CallExpr", f"{p[1]}.{p[3]}", p.lineno(1), p[5])
+
+
+def p_expresion_direccion(p):
+    """expresion : AMPERSAND ID"""
+    # fmt.Scan necesita la dirección de la variable para poder escribir en ella.
+    p[0] = Nodo("UnaryExpr", "&", p.lineno(1), [Nodo("Ident", p[2], p.lineno(2))])
+
+
+# --- Paso 6: acceso por índice ----------------------------------------------
+
+def p_acceso_indice(p):
+    """acceso_indice : ID CORCHETE_IZQ expresion CORCHETE_DER"""
+    p[0] = Nodo("IndexExpr", p[1], p.lineno(1), [p[3]])
+
+
+# --- Paso 7: structs (propiedades) y métodos ---------------------------------
+
+def p_declaracion_struct(p):
+    """declaracion_struct : TYPE ID STRUCT LLAVE_IZQ campos LLAVE_DER"""
+    p[0] = Nodo("StructDecl", p[2], p.lineno(1), p[5])
+
+
+def p_campos(p):
+    """campos : campo
+              | campos campo"""
+    p[0] = [p[1]] if len(p) == 2 else p[1] + [p[2]]
+
+
+def p_campo(p):
+    """campo : ID tipo"""
+    p[0] = Nodo("Field", p[1], p.lineno(1), [p[2]])
+
+
+def p_declaracion_metodo(p):
+    """declaracion_metodo : FUNC PAREN_IZQ ID ID PAREN_DER ID PAREN_IZQ parametros PAREN_DER bloque
+                          | FUNC PAREN_IZQ ID ID PAREN_DER ID PAREN_IZQ parametros PAREN_DER tipo bloque"""
+    # El receptor `(e Estudiante)` es lo que ata el método al struct.
+    receptor = Nodo("Receiver", p[3], p.lineno(3), [Nodo("Type", p[4], p.lineno(4))])
+    hijos = [receptor, *p[8]]
+    if len(p) == 12:
+        hijos.append(Nodo("Results", "", p.lineno(10), [p[10]]))
+    hijos.append(p[len(p) - 1])
+    p[0] = Nodo("MethodDecl", p[6], p.lineno(1), hijos)
+
+
+def p_selector(p):
+    """selector : ID PUNTO ID"""
+    # Leer una propiedad: e.nombre.
+    p[0] = Nodo("SelectorExpr", f"{p[1]}.{p[3]}", p.lineno(1))
+
+
+def p_literal_struct(p):
+    """literal_struct : ID LLAVE_IZQ lista_pares LLAVE_DER
+                      | ID LLAVE_IZQ LLAVE_DER"""
+    # Solo se usa tras `var x T =`; como expresión general chocaría con `for x {`.
+    pares = p[3] if len(p) == 5 else []
+    p[0] = Nodo("CompositeLit", p[1], p.lineno(1), pares)
+
 
 # ===== FIN aporte: Paúl Rodríguez (AndreewCore) =====
 
