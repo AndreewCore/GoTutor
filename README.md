@@ -112,7 +112,7 @@ extra del avance 2 (detalle en [CONTRIBUTING.md](CONTRIBUTING.md)):
 | Integrante | Usuario | Reglas sintácticas | Algoritmos de prueba |
 |---|---|---|---|
 | Paúl Rodríguez | `AndreewCore` | Variable con tipo (y sin tipo), for condicional e infinito, map, funciones con retorno, `fmt` (impresión y lectura), acceso por índice, structs y métodos | `algoritmo1.go`, `algoritmo1_errorsyn1.go`, `algoritmo1_errorsyn2.go` |
-| Danilo García | `Danilogb18` | Asignación (simple y compuesta), slice, for range, funciones con múltiple retorno, expresiones booleanas, `:=`, for clásico, `x++` / `x--` | `algoritmo2.go`, `algoritmo2_error1.go`, `algoritmo2_error2.go` |
+| Danilo García | `Danilogb18` | Asignación (simple y compuesta), slice, for range, funciones con múltiple retorno, expresiones booleanas, `:=`, for clásico, `x++` / `x--` | `algoritmo2.go`, `algoritmo2_errorsyn1.go`, `algoritmo2_errorsyn2.go` |
 | Samuel Echeverría | `SamuelEcheverria` | Constante, arreglo, if / else, funciones sin retorno, expresiones aritméticas, `switch` | `algoritmo3.go`, `algoritmo3_errorsyn1.go`, `algoritmo3_errorsyn2.go` |
 
 Cada integrante aporta su programa válido, que pasa el sintáctico sin errores,
