@@ -1,0 +1,37 @@
+GoTutor — algoritmo1_errorsyn1.go
+Fecha: 14/11/2026 21:39:15
+Usuario Git: AndreewCore
+
+ÁRBOL SINTÁCTICO
+Program  (L13)
+  PackageClause main  (L13)
+  ImportDecl "fmt"  (L15)
+  Error  (L17)  <-- error syn
+  Error  (L19)  <-- error syn
+  Error  (L20)  <-- error syn
+  FuncDecl main  (L22)
+    Block  (L22)
+      VarDecl nombre  (L23)
+        Type string  (L23)
+      Error  (L23)  <-- error syn
+      VarDecl stock  (L24)
+        MapType map  (L24)
+          Type string  (L24)
+          Type int  (L24)
+        MapLit  (L24)
+          Type string  (L24)
+          Type int  (L24)
+          KeyValue :  (L24)
+            BasicLit "lapiz"  (L24)
+            BasicLit 40  (L24)
+          KeyValue :  (L24)
+            BasicLit "cuaderno"  (L24)
+            BasicLit 3  (L24)
+      Error  (L25)  <-- error syn
+      Error  (L26)  <-- error syn
+
+ERRORES
+[18:15] Token inesperado: ','.  — Revisa el orden de la instrucción: puede faltar un operador, una coma, un ';' o una llave antes de este punto.
+[23:20] Token inesperado: '"Lapiz"'.  — Revisa el orden de la instrucción: puede faltar un operador, una coma, un ';' o una llave antes de este punto.
+[25:35] Token inesperado: ')'.  — Revisa el orden de la instrucción: puede faltar un operador, una coma, un ';' o una llave antes de este punto.
+[26:12] Token inesperado: ')'.  — Revisa el orden de la instrucción: puede faltar un operador, una coma, un ';' o una llave antes de este punto.
