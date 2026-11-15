@@ -60,11 +60,16 @@ git fetch
 git switch -c feature/sintactico-<usuario> origin/feature/sintactico
 ```
 
-| Integrante | Usuario | Estructura de datos | Estructura de control | Tipo de función | Además |
-|---|---|---|---|---|---|
-| Paúl Rodríguez | `AndreewCore` | Arreglo | if / else | Sin retorno | Impresión, ingreso de datos, structs y métodos |
-| Danilo García | `Danilogb18` | Slice y acceso `a[i]` | for | Con un retorno | Declaración y asignación de variables, expresiones aritméticas |
-| Samuel Echeverría | `SamuelEcheverria` | Map | switch | Con varios retornos | Condiciones con conectores lógicos |
+Las reglas salen de la Tabla 11 del documento (Asignación de reglas), más un
+reparto extra del avance 2 con construcciones básicas que enriquecen los
+algoritmos. Cada uno toma reglas parecidas a las suyas, para que su
+sintáctico le sirva después en el semántico.
+
+| Integrante | Usuario | Tabla 11 | Además (avance 2) |
+|---|---|---|---|
+| Paúl Rodríguez | `AndreewCore` | Variable con tipo, for condicional, map, funciones con retorno | `fmt` (impresión y lectura), acceso por índice, `for {}`, structs y métodos |
+| Danilo García | `Danilogb18` | Asignación compuesta, slice, for range, funciones con múltiple retorno | Expresiones booleanas, `:=`, for clásico, `x++` / `x--` |
+| Samuel Echeverría | `SamuelEcheverria` | Constante, arreglo, if, funciones sin retorno | Expresiones aritméticas, `switch` |
 
 1. **Código.** En `backend/analizador/sintactico.py` cada integrante escribe
    solo dentro de su bloque `INICIO aporte` / `FIN aporte`, siguiendo sus
@@ -89,10 +94,10 @@ git switch -c feature/sintactico-<usuario> origin/feature/sintactico
 4. **Commit.** Incluir los logs (`git add backend/logs/`) y abrir el PR hacia
    `feature/sintactico`.
 
-Los casos que el documento no cubre y que usan los algoritmos (asignar a un
-índice, declaración múltiple, etc.) están listados al inicio de
-`sintactico.py`: o se implementan o se explican como limitación en la
-sustentación.
+Lo que queda fuera del reparto y aparece en los algoritmos (`var x = 5` sin
+tipo, `float64(x)`, asignar a un índice, declaración múltiple) está listado al
+inicio de `sintactico.py`: hay que ajustar esos algoritmos o explicarlo como
+limitación en la sustentación.
 
 En `feature/sintactico`, `test_ejemplos.py` falla hasta que estén los tres
 aportes, porque los ejemplos usan reglas de todos. Para ver los conflictos de
