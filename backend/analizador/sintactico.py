@@ -158,6 +158,7 @@ def p_sentencia_vacia(p):
     p[0] = None
 
 
+_ultimo_token_error = None
 def p_sentencia_error(p):
     """sentencia : error"""
     # Permite seguir analizando tras un error y reportar más de uno; p_error ya registró el mensaje.
@@ -557,40 +558,79 @@ def p_lista_tipos(p):
 # Se agregan a la precedencia al final del archivo; PLY no construye el
 # parser si un nombre está en la precedencia y ninguna regla lo usa, por eso
 # la lista empieza vacía.
-precedencia_SamuelEcheverria: list[str] = []
+precedencia_SamuelEcheverria: list[str] = ["UMINUS"]
 
-# TODO(SamuelEcheverria): sección 4, "Declaración de Variables" (constante).
-#   sentencia         : declaracion_const
-#   declaracion_const : CONST ID ASIGNA expresion
-#
-# TODO(SamuelEcheverria): sección 4, "Estructuras de Datos" (arreglo).
-#   expresion : arreglo
-#   arreglo   : CORCHETE_IZQ ENTERO CORCHETE_DER tipo LLAVE_IZQ lista_valores LLAVE_DER
-#   tipo      : CORCHETE_IZQ ENTERO CORCHETE_DER tipo      (para parámetros, Tabla 9)
-#
-# TODO(SamuelEcheverria): sección 4, "Estructuras de Control" (if).
-#   sentencia    : sentencia_if
-#   sentencia_if : IF expresion bloque
-#                | IF expresion bloque ELSE bloque
-#                | IF expresion bloque ELSE sentencia_if
-#
-# TODO(SamuelEcheverria): sección 4, "Declaraciones de Funciones" (sin retorno).
-#   sentencia        : func_sin_retorno
-#   func_sin_retorno : FUNC ID PAREN_IZQ parametros PAREN_DER bloque
-#
-# TODO(SamuelEcheverria): sección 4, "Expresiones Aritméticas". Los operandos
-# simples (ENTERO, DECIMAL, CADENA, ID, paréntesis) ya están en la estructura común.
-#   expresion : expresion MAS expresion | expresion MENOS expresion
-#             | expresion POR expresion | expresion DIVIDIDO expresion
-#             | expresion MODULO expresion
-#             | MENOS expresion %prec UMINUS      (y agregar "UMINUS" a precedencia_SamuelEcheverria)
-#
-# TODO(SamuelEcheverria): sección 4, "Estructuras de Control" (switch).
-#   sentencia        : sentencia_switch
-#   sentencia_switch : SWITCH expresion LLAVE_IZQ casos LLAVE_DER
-#   casos            : caso | casos caso
-#   caso             : CASE expresion DOS_PUNTOS sentencias
-#                    | DEFAULT DOS_PUNTOS sentencias
+
+def p_sentencia_SamuelEcheverria(p):
+    """sentencia : declaracion_const
+                 | sentencia_if
+                 | func_sin_retorno
+                 | sentencia_switch"""
+    p[0] = p[1]
+
+
+def p_expresion_SamuelEcheverria(p):
+    """expresion : arreglo
+                 | expresion MAS expresion
+                 | expresion MENOS expresion
+                 | expresion POR expresion
+                 | expresion DIVIDIDO expresion
+                 | expresion MODULO expresion
+                 | MENOS expresion %prec UMINUS"""
+    if len(p) == 2:
+        p[0] = p[1]
+    elif len(p) == 3:
+        p[0] = Nodo("UnaryExpr", p[1], p.lineno(1), [p[2]])
+    else:
+        p[0] = Nodo("BinaryExpr", p[2], p.lineno(2), [p[1], p[3]])
+
+
+def p_tipo_SamuelEcheverria(p):
+    """tipo : CORCHETE_IZQ ENTERO CORCHETE_DER tipo"""
+    p[0] = Nodo("Type", f"[{p[2]}]{p[4].dato}", p.lineno(1), [p[4]])
+
+
+def p_declaracion_const(p):
+    """declaracion_const : CONST ID ASIGNA expresion"""
+    p[0] = Nodo("ConstDecl", p[2], p.lineno(1), [p[4]])
+
+
+def p_arreglo(p):
+    """arreglo : CORCHETE_IZQ ENTERO CORCHETE_DER tipo LLAVE_IZQ lista_valores LLAVE_DER"""
+    p[0] = Nodo("ArrayLit", f"[{p[2]}]{p[4].dato}", p.lineno(1), [p[4], *p[6]])
+
+
+def p_if_SamuelEcheverria(p):
+    """sentencia_if : IF expresion bloque
+                    | IF expresion bloque ELSE bloque
+                    | IF expresion bloque ELSE sentencia_if"""
+    hijos = [p[2], p[3]] if len(p) == 4 else [p[2], p[3], p[5]]
+    p[0] = Nodo("IfStmt", "", p.lineno(1), hijos)
+
+
+def p_func_sin_retorno(p):
+    """func_sin_retorno : FUNC ID PAREN_IZQ parametros PAREN_DER bloque"""
+    p[0] = Nodo("FuncDecl", p[2], p.lineno(1), [*p[4], p[6]])
+
+
+def p_sentencia_switch(p):
+    """sentencia_switch : SWITCH expresion LLAVE_IZQ casos LLAVE_DER"""
+    p[0] = Nodo("SwitchStmt", "", p.lineno(1), [p[2], *p[4]])
+
+
+def p_casos(p):
+    """casos : caso
+             | casos caso"""
+    p[0] = [p[1]] if len(p) == 2 else p[1] + [p[2]]
+
+
+def p_caso(p):
+    """caso : CASE expresion DOS_PUNTOS sentencias
+            | DEFAULT DOS_PUNTOS sentencias"""
+    if p.slice[1].type == "CASE":
+        p[0] = Nodo("CaseClause", "case", p.lineno(1), [p[2], *p[4]])
+    else:
+        p[0] = Nodo("CaseClause", "default", p.lineno(1), p[3])
 
 # ===== FIN aporte: Samuel Echeverría (SamuelEcheverria) =====
 
