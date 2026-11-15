@@ -51,59 +51,6 @@ Los nombres de los tokens son los del documento del proyecto (`ENTERO`,
 4. **Commit.** Incluir los logs en el commit (`git add backend/logs/`): deben
    quedar en el historial. No suban los logs que genera la interfaz al probar.
 
-## Avance 2: analizador sintáctico
-
-La rama de la fase es `feature/sintactico`:
-
-```bash
-git fetch
-git switch -c feature/sintactico-<usuario> origin/feature/sintactico
-```
-
-Las reglas salen de la Tabla 11 del documento (Asignación de reglas), más un
-reparto extra del avance 2 con construcciones básicas que enriquecen los
-algoritmos. Cada uno toma reglas parecidas a las suyas, para que su
-sintáctico le sirva después en el semántico.
-
-| Integrante | Usuario | Tabla 11 | Además (avance 2) |
-|---|---|---|---|
-| Paúl Rodríguez | `AndreewCore` | Variable con tipo, for condicional, map, funciones con retorno | `fmt` (impresión y lectura), acceso por índice, `for {}`, structs y métodos |
-| Danilo García | `Danilogb18` | Asignación compuesta, slice, for range, funciones con múltiple retorno | Expresiones booleanas, `:=`, for clásico, `x++` / `x--` |
-| Samuel Echeverría | `SamuelEcheverria` | Constante, arreglo, if, funciones sin retorno | Expresiones aritméticas, `switch` |
-
-1. **Código.** En `backend/analizador/sintactico.py` cada integrante escribe
-   solo dentro de su bloque `INICIO aporte` / `FIN aporte`, siguiendo sus
-   `TODO(<usuario>)`. Las reglas vienen de la sección 4 del documento del
-   proyecto. La "Estructura común" (programa, bloque, sentencias, tipos
-   primitivos, llamadas, parámetros, `return` y `p_error`) ya está hecha y
-   compila sola, así que cada uno puede probar su parte sin esperar a los demás.
-   Las alternativas de `sentencia`, `expresion` y `tipo` se agregan con una
-   función propia en el bloque de cada uno (PLY las junta). Comenten cada regla.
-2. **Algoritmos.** El `algoritmoN.go` de cada uno debe pasar el sintáctico con
-   sus reglas. Agreguen versiones con errores de sintaxis
-   (`algoritmoN_errorsyn1.go`, `algoritmoN_errorsyn2.go`) y, quien tenga
-   structs, un ejemplo con struct y método.
-3. **Logs.** Cada prueba genera un log en `backend/logs/`:
-
-   ```bash
-   cd backend
-   python probar_sintactico.py ../algoritmos/algoritmo2.go -u Danilogb18
-   # -> logs/sintactico-Danilogb18-12-11-2026-14h32.txt
-   ```
-
-4. **Commit.** Incluir los logs (`git add backend/logs/`) y abrir el PR hacia
-   `feature/sintactico`.
-
-Lo que queda fuera del reparto y aparece en los algoritmos (`var x = 5` sin
-tipo, `float64(x)`, asignar a un índice, declaración múltiple) está listado al
-inicio de `sintactico.py`: hay que ajustar esos algoritmos o explicarlo como
-limitación en la sustentación.
-
-En `feature/sintactico`, `test_ejemplos.py` falla hasta que estén los tres
-aportes, porque los ejemplos usan reglas de todos. Para ver los conflictos de
-la gramática: `GOTUTOR_DEBUG_YACC=1 python probar_sintactico.py <archivo>`,
-que deja `analizador/parser.out` (no se sube).
-
 ## Implementar las fases
 
 Solo se editan los tres archivos de `backend/analizador/`. Cada uno trae
