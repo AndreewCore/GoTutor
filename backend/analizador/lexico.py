@@ -254,6 +254,11 @@ reservadas_SamuelEcheverria: dict[str, str] = {
     "break": "BREAK",
     "continue": "CONTINUE",
     "map": "MAP",
+    # Avance 2: la entrega pide definir clases, propiedades y métodos. Go no
+    # tiene clases; su equivalente es `type Nombre struct { ... }` más métodos
+    # con receptor, y sin estas dos palabras el sintáctico no puede reconocerlo.
+    "type": "TYPE",
+    "struct": "STRUCT",
 }
 
 t_ASIGNA_CORTA = r":="
