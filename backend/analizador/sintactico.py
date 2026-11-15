@@ -506,7 +506,7 @@ def p_arreglo(p):
 
 
 # 3. Estructura de control: Sentencia if / else / else if
-def p_sentencia_if(p):
+def p_if_SamuelEcheverria(p):
     """sentencia_if : IF expresion bloque
                     | IF expresion bloque ELSE bloque
                     | IF expresion bloque ELSE sentencia_if"""

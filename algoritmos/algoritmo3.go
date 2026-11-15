@@ -1,13 +1,14 @@
-// Algoritmo de prueba 3 — Samuel Echeverría (SamuelEcheverria)
-//
-// Programa Go con la mayoría de tokens del subconjunto de GoTutor, usado
-// como entrada para validar el analizador. Para generar el log léxico:
-//   cd backend && python probar_lexico.py ../algoritmos/algoritmo3.go -u SamuelEcheverria
-//
+// Simula el balance de inventario, descuentos y facturación de una tienda.
+// Incluye todas las construcciones léxicas y sintácticas del subconjunto GoTutor.
 
 package main
 
 import "fmt"
+
+/* imprimirEncabezado muestra el título de cierre de caja (función sin retorno). */
+func imprimirEncabezado() {
+	fmt.Println("=== CIERRE DE CAJA GOTUTOR ===")
+}
 
 /* calcularBruto procesa los precios de una lista de ventas
    y devuelve el ingreso bruto acumulado. */
@@ -25,6 +26,8 @@ func calcularBruto(ventas []float64, meta float64) float64 {
 }
 
 func main() {
+	imprimirEncabezado()
+
 	var cajero string = "Samuel"
 	var turno int
 	const IMPUESTO = 0.15

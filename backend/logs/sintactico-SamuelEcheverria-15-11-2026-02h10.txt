@@ -1,0 +1,17 @@
+GoTutor — algoritmo3_errorsyn2.go
+Fecha: 15/11/2026 02:10:32
+Usuario Git: SamuelEcheverria
+
+ÁRBOL SINTÁCTICO
+Program  (L1)
+  PackageClause main  (L1)
+  FuncDecl verificarEstado  (L3)
+    Block  (L3)
+      ConstDecl LIMITE  (L4)
+        BasicLit 10  (L4)
+      Error  (L5)  <-- error syn
+      ConstDecl OK  (L6)
+        BasicLit 1  (L6)
+
+ERRORES
+[5:12] Token inesperado: '=='.  — Revisa el orden de la instrucción: puede faltar un operador, una coma, un ';' o una llave antes de este punto.

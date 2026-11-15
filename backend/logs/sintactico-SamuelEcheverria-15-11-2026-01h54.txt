@@ -1,0 +1,14 @@
+GoTutor — algoritmo3_errorsyn1.go
+Fecha: 15/11/2026 01:54:17
+Usuario Git: SamuelEcheverria
+
+ÁRBOL SINTÁCTICO
+Program  (L3)
+  PackageClause main  (L3)
+  FuncDecl mostrarAviso  (L5)
+    Block  (L5)
+      Error  (L6)  <-- error syn
+      Error  (L7)  <-- error syn
+
+ERRORES
+[6:16] La línea 6 quedó incompleta: después de 'IMPUESTO' no se esperaba 'total' (línea 7).  — Revisa si falta cerrar un paréntesis ')' o completar la instrucción.
