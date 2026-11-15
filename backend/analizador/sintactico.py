@@ -158,6 +158,7 @@ def p_sentencia_vacia(p):
     p[0] = None
 
 
+_ultimo_token_error = None
 def p_sentencia_error(p):
     """sentencia : error"""
     # Permite seguir analizando tras un error y reportar más de uno; p_error ya registró el mensaje.
