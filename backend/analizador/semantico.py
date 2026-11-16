@@ -302,18 +302,26 @@ class Ambito:
 
     def __init__(self, nombre: str, padre: Ambito | None = None):
         """Crea el ámbito dentro de `padre`."""
-        # TODO(SamuelEcheverria): guardar el padre, un dict nombre -> Simbolo y
-        #   la ruta que sale en la tabla ("global", "main", "main › for").
+        self.nombre = nombre
+        self.padre = padre
+        self.simbolos: dict[str, Simbolo] = {}
+        # Si el padre es None o es "global", la ruta es el nombre directo (ej. "global", "main").
+        # Si estamos dentro de una función o bloque anidado, se encadena (ej. "main › if").
+        if padre is None or padre.ruta == "global":
+            self.ruta = nombre
+        else:
+            self.ruta = f"{padre.ruta} › {nombre}"
 
 
 def abrir(az: Analizador, nombre: str) -> None:
     """Entra a un ámbito nuevo dentro del actual."""
-    # TODO(SamuelEcheverria)
+    az.ambito = Ambito(nombre, az.ambito)
 
 
 def cerrar(az: Analizador) -> None:
     """Vuelve al ámbito padre."""
-    # TODO(SamuelEcheverria)
+    if az.ambito.padre is not None:
+        az.ambito = az.ambito.padre
 
 
 def declarar(az: Analizador, nombre: str, tipo: str, categoria: str, linea: int) -> Simbolo:
@@ -321,12 +329,26 @@ def declarar(az: Analizador, nombre: str, tipo: str, categoria: str, linea: int)
 
     categoria: "Variable", "Constante", "Parámetro", "Función" o "Paquete".
     """
-    # TODO(SamuelEcheverria)
+    sim = Simbolo(
+        nombre=nombre,
+        tipo=tipo,
+        categoria=categoria,
+        ambito=az.ambito.ruta,
+        linea=linea,
+    )
+    az.ambito.simbolos[nombre] = sim
+    az.simbolos.append(sim)
+    return sim
 
 
 def buscar(az: Analizador, nombre: str) -> Simbolo | None:
     """Busca `nombre` del ámbito actual hacia el global; None si no está declarado."""
-    # TODO(SamuelEcheverria)
+    actual: Ambito | None = az.ambito
+    while actual is not None:
+        if nombre in actual.simbolos:
+            return actual.simbolos[nombre]
+        actual = actual.padre
+    return None
 
 
 def identificador(az: Analizador, nombre: str, nodo: Nodo, usar: bool = True) -> Simbolo | None:
@@ -334,43 +356,96 @@ def identificador(az: Analizador, nombre: str, nodo: Nodo, usar: bool = True) ->
 
     Con `usar` suma 1 a `usos` (asignarle a x no cuenta como leerla).
     """
-    # TODO(SamuelEcheverria): reportar y agregar una fila "Sin declarar" a la tabla, p. ej.:
-    #   reportar(az, "Identificadores", nodo, f"El identificador '{nombre}' no ha sido "
-    #            f"declarado en este ámbito.", "...", texto=nombre)
-    #   az.simbolos.append(Simbolo(nombre, ERROR, "Sin declarar", ..., nodo.linea, error=True))
+    if nombre == "_":
+        return None
+
+    sim = buscar(az, nombre)
+    if sim is None:
+        reportar(
+            az,
+            "Identificadores",
+            nodo,
+            f"El identificador '{nombre}' no ha sido declarado en este ámbito.",
+            f"Declara '{nombre}' con 'var {nombre} <tipo>' o '{nombre} := <valor>' antes de usarlo.",
+            texto=nombre,
+        )
+        az.simbolos.append(
+            Simbolo(
+                nombre=nombre,
+                tipo=ERROR,
+                categoria="Sin declarar",
+                ambito=az.ambito.ruta,
+                linea=nodo.linea,
+                error=True,
+            )
+        )
+        return None
+
+    if usar:
+        sim.usos += 1
+    return sim
 
 
 def sem_ImportDecl(az: Analizador, n: Nodo) -> None:
     """`import "fmt"`; dato = '"fmt"'. Declara el paquete para que `fmt.Println` no dé error."""
-    # TODO(SamuelEcheverria)
+    nombre_paquete = n.dato.strip('"')
+    if "/" in nombre_paquete:
+        nombre_paquete = nombre_paquete.rsplit("/", 1)[-1]
+    declarar(az, nombre_paquete, "paquete", "Paquete", n.linea)
 
 
 def sem_Ident(az: Analizador, n: Nodo) -> str:
     """Uso de una variable; dato = nombre. Devuelve su tipo, o ERROR si no está declarada."""
-    # TODO(SamuelEcheverria)
-    return ERROR
+    sim = identificador(az, n.dato, n, usar=True)
+    if sim is None:
+        return ERROR
+    return sim.tipo
 
 
 def sem_ParenExpr(az: Analizador, n: Nodo) -> str:
     """`(x)`; hijos [x]. Devuelve el tipo de x."""
-    # TODO(SamuelEcheverria)
-    return ERROR
+    if not n.hijos:
+        return ERROR
+    return visitar(az, n.hijos[0])
 
 
 def sem_ConstDecl(az: Analizador, n: Nodo) -> None:
     """`const X = v`; dato = nombre, hijos [valor]."""
-    # TODO(SamuelEcheverria)
+    tipo_valor = visitar(az, n.hijos[0]) if n.hijos else ERROR
+    declarar(az, n.dato, tipo_valor, "Constante", n.linea)
 
 
 def sem_ArrayLit(az: Analizador, n: Nodo) -> str:
     """`[N]T{...}`; dato = "[N]T", hijos [Type, valores...]. Devuelve dato."""
-    # TODO(SamuelEcheverria)
-    return ERROR
+    tipo_elem = nombre_tipo(n.hijos[0]) if n.hijos else ERROR
+    for elem in n.hijos[1:]:
+        tipo_item = visitar(az, elem)
+        if tipo_item != ERROR and tipo_elem != ERROR:
+            asignar(az, tipo_elem, tipo_item, elem, f"elemento de arreglo '{n.dato}'")
+    return n.dato
 
 
 def sem_IfStmt(az: Analizador, n: Nodo) -> None:
     """`if c {} else ...`; hijos [cond, Block, (Block | IfStmt)?]. La condición va a `condicion`."""
-    # TODO(SamuelEcheverria)
+    if len(n.hijos) < 2:
+        return
+
+    condicion(az, n.hijos[0], "if")
+
+    abrir(az, "if")
+    for sentencia in n.hijos[1].hijos:
+        visitar(az, sentencia)
+    cerrar(az)
+
+    if len(n.hijos) == 3:
+        rama_else = n.hijos[2]
+        if rama_else.tipo == "IfStmt":
+            visitar(az, rama_else)
+        else:
+            abrir(az, "else")
+            for sentencia in rama_else.hijos:
+                visitar(az, sentencia)
+            cerrar(az)
 
 
 def sem_SwitchStmt(az: Analizador, n: Nodo) -> None:
@@ -379,12 +454,39 @@ def sem_SwitchStmt(az: Analizador, n: Nodo) -> None:
     CaseClause: dato "case" con hijos [valor, sentencias...] o "default" con
     hijos = sentencias. Cada caso es un ámbito.
     """
-    # TODO(SamuelEcheverria)
+    if not n.hijos:
+        return
+
+    tipo_switch = visitar(az, n.hijos[0])
+
+    for clausula in n.hijos[1:]:
+        if clausula.dato == "case":
+            tipo_caso = visitar(az, clausula.hijos[0])
+            if tipo_switch != ERROR and tipo_caso != ERROR and tipo_switch != tipo_caso:
+                reportar(
+                    az,
+                    "Operaciones permitidas",
+                    clausula.hijos[0],
+                    f"El valor del 'case' es de tipo '{tipo_caso}', pero la expresión del 'switch' es '{tipo_switch}'.",
+                    f"Usa un valor de tipo '{tipo_switch}' en este caso.",
+                )
+            abrir(az, "case")
+            for sentencia in clausula.hijos[1:]:
+                visitar(az, sentencia)
+            cerrar(az)
+        else:
+            abrir(az, "default")
+            for sentencia in clausula.hijos:
+                visitar(az, sentencia)
+            cerrar(az)
 
 
 def sem_Block(az: Analizador, n: Nodo) -> None:
     """`{ ... }`; hijos = sentencias, en un ámbito propio."""
-    # TODO(SamuelEcheverria)
+    abrir(az, "bloque")
+    for sentencia in n.hijos:
+        visitar(az, sentencia)
+    cerrar(az)
 
 
 def sem_BinaryExpr(az: Analizador, n: Nodo) -> str:
@@ -393,10 +495,93 @@ def sem_BinaryExpr(az: Analizador, n: Nodo) -> str:
     Comparaciones y `&&`/`||` dan "bool" (Tabla 9). En + - * / % se aplica
     `conversion` y, si no reportó, la regla Operaciones permitidas.
     """
-    # TODO(SamuelEcheverria): - * / % solo entre numéricos del mismo tipo; + también
-    #   entre dos string. Si no se permite, reportar y devolver ERROR, p. ej.:
-    #   reportar(az, "Operaciones permitidas", n, f"Operación '{n.dato}' inválida entre "
-    #            f"operandos de tipo '{izq}' y '{der}' (tipos incompatibles).", "...")
+    izq = visitar(az, n.hijos[0])
+    der = visitar(az, n.hijos[1])
+
+    if izq == ERROR or der == ERROR:
+        return ERROR
+
+    op = n.dato
+
+    # 1. Operadores lógicos: requieren bool en ambos lados y devuelven bool
+    if op in ("&&", "||"):
+        if izq != "bool" or der != "bool":
+            reportar(
+                az,
+                "Operaciones permitidas",
+                n,
+                f"Operación lógica '{op}' inválida entre '{izq}' y '{der}'.",
+                "Los operadores lógicos '&&' y '||' solo aceptan operandos de tipo 'bool'.",
+            )
+            return ERROR
+        return "bool"
+
+    # 2. Operadores relacionales: devuelven bool
+    if op in ("==", "!=", "<", ">", "<=", ">="):
+        if op in ("<", ">", "<=", ">="):
+            if izq not in ("int", "float64", "string") or izq != der:
+                if conversion(az, izq, der, n, f"comparación '{op}'"):
+                    return ERROR
+                reportar(
+                    az,
+                    "Operaciones permitidas",
+                    n,
+                    f"No se pueden comparar valores de tipo '{izq}' y '{der}' con '{op}'.",
+                    "Compara valores del mismo tipo (int, float64 o string).",
+                )
+                return ERROR
+        else:
+            if izq != der:
+                if conversion(az, izq, der, n, f"comparación '{op}'"):
+                    return ERROR
+                reportar(
+                    az,
+                    "Operaciones permitidas",
+                    n,
+                    f"Comparación '{op}' inválida entre '{izq}' y '{der}'.",
+                    "Ambos lados de la comparación deben ser del mismo tipo.",
+                )
+                return ERROR
+        return "bool"
+
+    # 3. Operadores aritméticos (+, -, *, /, %)
+    # Primero detectamos si es un intento de conversión implícita entre int y float64
+    if conversion(az, izq, der, n, f"operación '{op}'"):
+        return ERROR
+
+    if op == "+":
+        if izq in ("int", "float64", "string") and izq == der:
+            return izq
+        reportar(
+            az,
+            "Operaciones permitidas",
+            n,
+            f"Operación '+' inválida entre operandos de tipo '{izq}' y '{der}' (tipos incompatibles).",
+            "El operador '+' solo suma números del mismo tipo (int o float64) o concatena dos 'string'.",
+        )
+        return ERROR
+
+    if op in ("-", "*", "/", "%"):
+        if op == "%" and (izq != "int" or der != "int"):
+            reportar(
+                az,
+                "Operaciones permitidas",
+                n,
+                f"Operación '%' inválida entre operandos de tipo '{izq}' y '{der}'.",
+                "El operador módulo '%' solo se aplica entre números enteros ('int').",
+            )
+            return ERROR
+        if izq in ("int", "float64") and izq == der:
+            return izq
+        reportar(
+            az,
+            "Operaciones permitidas",
+            n,
+            f"Operación '{op}' inválida entre operandos de tipo '{izq}' y '{der}' (tipos incompatibles).",
+            f"El operador '{op}' solo puede aplicarse entre números del mismo tipo exacto ('int' o 'float64').",
+        )
+        return ERROR
+
     return ERROR
 
 # ===== FIN aporte: Samuel Echeverría (SamuelEcheverria) =====
