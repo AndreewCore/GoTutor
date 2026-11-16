@@ -47,7 +47,7 @@ No considerado (fuera de la Tabla 11)
 
 from __future__ import annotations
 
-from .modelos import ErrorAnalisis, Nodo, Simbolo, columna  # noqa: F401
+from .modelos import ErrorAnalisis, Nodo, Simbolo, columna
 
 
 # ===== INICIO aporte: Paúl Rodríguez (AndreewCore) =====
@@ -61,22 +61,36 @@ class Analizador:
 
     def __init__(self, codigo: str):
         """Prepara el estado para analizar `codigo`."""
-        # TODO(AndreewCore): guardar `codigo`, `errores` (list[ErrorAnalisis]),
-        #   la función actual (nombre y tipos de retorno, para Retorno) y los
-        #   tipos de retorno de cada función (para el tipo de una llamada).
-        #   SamuelEcheverria necesita `ambito` (Ambito("global")) y `simbolos`.
+        self.codigo = codigo
+        # reportar() busca la columna en la línea del error; se parte una sola vez.
+        self.lineas = codigo.split("\n")
+        self.errores: list[ErrorAnalisis] = []
+        # (nombre, tipos de retorno) de la función que se está recorriendo:
+        # Retorno de funciones compara cada `return` con esa firma.
+        self.funcion: tuple[str, list[str]] | None = None
+        # Tipos de retorno de cada función declarada, para el tipo de una llamada.
+        self.firmas: dict[str, list[str]] = {}
+        # Tabla de símbolos (SamuelEcheverria).
+        self.ambito = Ambito("global")
+        self.simbolos: list[Simbolo] = []
 
 
 def analizar_semantico(ast: Nodo, codigo: str) -> tuple[list[Simbolo], list[ErrorAnalisis]]:
     """Revisa el significado del programa y devuelve la tabla de símbolos y los errores."""
-    # TODO(AndreewCore): crear el Analizador, visitar los hijos de `ast` (Program)
-    #   y devolver (az.simbolos, az.errores).
-    raise NotImplementedError("semantico.py aún no está implementado")
+    az = Analizador(codigo)
+    for hijo in ast.hijos:
+        visitar(az, hijo)
+    return az.simbolos, az.errores
 
 
 def visitar(az: Analizador, nodo: Nodo) -> str | None:
     """Llama a `sem_<nodo.tipo>(az, nodo)` y devuelve lo que devuelva; ERROR si no existe."""
-    # TODO(AndreewCore): buscar la función con globals().get(f"sem_{nodo.tipo}").
+    # Despacho por nombre: cada integrante agrega sus nodos desde su bloque sin
+    # tocar esta función (igual que PLY junta las p_ de cada uno).
+    funcion = globals().get(f"sem_{nodo.tipo}")
+    # Sin función, el nodo no se modela (PackageClause, StructDecl...) o su
+    # dueño aún no la escribe: ERROR hace que las reglas no lo revisen.
+    return funcion(az, nodo) if funcion else ERROR
 
 
 def reportar(az: Analizador, regla: str, nodo: Nodo, mensaje: str, sugerencia: str = "",
@@ -86,12 +100,26 @@ def reportar(az: Analizador, regla: str, nodo: Nodo, mensaje: str, sugerencia: s
     Los nodos solo guardan la línea: la columna es la de `texto` (por defecto
     `nodo.dato`) dentro de esa línea, calculada con `columna()` de modelos.py.
     """
-    # TODO(AndreewCore)
+    nodo.error = "sem"
+    az.errores.append(ErrorAnalisis("sem", nodo.linea, _columna_de(az, nodo.linea, texto or nodo.dato),
+                                    f"[{regla}] {mensaje}", sugerencia))
+
+
+def _columna_de(az: Analizador, linea: int, texto: str) -> int:
+    """Columna de la primera aparición de `texto` en `linea`, o 1 si no aparece."""
+    if not 1 <= linea <= len(az.lineas):
+        return 1
+    inicio = sum(len(l) + 1 for l in az.lineas[:linea - 1])
+    posicion = az.lineas[linea - 1].find(texto) if texto else -1
+    return columna(az.codigo, inicio + max(posicion, 0))
 
 
 def nombre_tipo(nodo: Nodo) -> str:
     """Texto de un nodo Type ("int", "[]float64") o MapType ("map[string]int", hijos [clave, valor])."""
-    # TODO(AndreewCore)
+    # MapType guarda solo "map" en `dato`: el texto completo se arma con sus hijos.
+    if nodo.tipo == "MapType":
+        return f"map[{nombre_tipo(nodo.hijos[0])}]{nombre_tipo(nodo.hijos[1])}"
+    return nodo.dato
 
 
 def asignar(az: Analizador, nodo: Nodo, nombre: str, esperado: str, recibido: str) -> None:
