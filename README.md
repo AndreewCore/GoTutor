@@ -73,9 +73,8 @@ En el avance 1 (solo léxico) lo esperado es `OK (skipped=13)`: los 6 casos de
 `test_ejemplos.py` necesitan el sintáctico y los 7 de `test_integracion_ply.py`
 se desactivan porque `lexico.py` ya tiene reglas.
 
-En el avance 2 queda una falla conocida en `test_ejemplos.py`: el ejemplo
-`ambitos` usa la declaración múltiple (`resultado, ok := dividir(10, 4)`), que
-está fuera del alcance de la gramática (ver "Avance 2").
+En el avance 2 lo esperado es `OK (skipped=11)`: los 4 casos de
+`test_ejemplos.py` que llegan al semántico y los 7 de `test_integracion_ply.py`.
 
 ## Avance 1: analizador léxico
 
