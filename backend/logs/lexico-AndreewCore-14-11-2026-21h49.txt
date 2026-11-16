@@ -1,0 +1,33 @@
+GoTutor — algoritmo1_error1.go
+Fecha: 14/11/2026 21:49:15
+Usuario Git: AndreewCore
+
+TOKENS
+11:1	PACKAGE	'package'
+11:9	ID	'main'
+13:1	IMPORT	'import'
+13:8	CADENA	'"fmt"'
+16:1	FUNC	'func'
+16:6	ID	'main'
+16:10	PAREN_IZQ	'('
+16:11	PAREN_DER	')'
+16:13	LLAVE_IZQ	'{'
+17:2	ID	'fmt'
+17:5	PUNTO	'.'
+17:6	ID	'Println'
+17:13	PAREN_IZQ	'('
+17:14	CADENA	'"Hola"'
+17:20	PAREN_DER	')'
+18:4	ID	'comentario'
+18:15	ID	'con'
+18:19	ID	'numeral'
+19:2	ID	'fmt'
+19:5	PUNTO	'.'
+19:6	ID	'Println'
+19:13	PAREN_IZQ	'('
+19:14	CADENA	'"Mundo"'
+19:21	PAREN_DER	')'
+
+ERRORES
+[18:2] Carácter no reconocido: '#'.  — Los comentarios en Go empiezan con // o van entre /* y */.
+[20:2] Comentario de varias líneas sin cerrar.  — Cierra el comentario con */ o usa // si es de una sola línea.
