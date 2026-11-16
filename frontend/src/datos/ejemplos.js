@@ -120,8 +120,8 @@ func main() {
 }`
   },
   {
-    id:"ambitos", name:"Ámbitos y múltiples retornos", level:"avanzado", fase:"sem", linea:15,
-    challenge:"Tres errores semánticos distintos: una variable sin usar, una variable fuera de su ámbito y una asignación con el número equivocado de valores.",
+    id:"ambitos", name:"Ámbitos y múltiples retornos", level:"avanzado", fase:"sem", linea:17,
+    challenge:"Dos errores semánticos distintos: una variable usada fuera de su ámbito y una asignación que recibe dos valores en lugar de uno.",
     code:
 `package main
 
@@ -129,7 +129,7 @@ import "fmt"
 
 func dividir(a float64, b float64) (float64, bool) {
 	if b == 0 {
-		return 0, false
+		return 0.0, false
 	}
 	return a / b, true
 }
