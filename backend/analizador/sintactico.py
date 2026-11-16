@@ -30,7 +30,7 @@ PLY junta todas las funciones p_ que definen el mismo no terminal. Por eso
 cada integrante agrega sus alternativas a `sentencia`, `expresion` y `tipo`
 desde su propio bloque, con su propia función:
 
-    def p_sentencia_AndreewCore(p):
+    def p_sentencia_<usuario>(p):
         '''sentencia : declaracion_var
                      | for_condicional'''
         p[0] = p[1]
@@ -74,8 +74,8 @@ implementa; se anota aquí para explicarlo en la sustentación.
     admite un ID a la izquierda.
   - Declaración múltiple: `suma, promedio, perfecta := estadisticas(notas)`.
     Sin ella, el resultado de una función con varios retornos solo se puede
-    devolver o pasar a otra función, no guardar. El ejemplo `ambitos` de la
-    interfaz la usa y por eso falla en test_ejemplos.py.
+    devolver o pasar a otra función, no guardar. Por eso el ejemplo
+    `ambitos` de la interfaz usa `var total float64 = dividir(8, 2)`.
 
   Limitaciones aceptadas:
   - Sin inserción automática de ';': los saltos de línea se ignoran y ';' es
