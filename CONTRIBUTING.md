@@ -116,22 +116,28 @@ git switch -c feature/semantico-<usuario> origin/feature/semantico
 Solo se implementan las reglas semánticas de la Tabla 11 del documento. Lo que
 queda fuera está en "No considerado", al inicio de `semantico.py`.
 
-| Integrante | Usuario | Reglas semánticas (Tabla 11) | Funciones |
-|---|---|---|---|
-| Paúl Rodríguez | `AndreewCore` | Retorno de funciones, Asignación de tipo | `retorno_AndreewCore`, `asignacion_AndreewCore` |
-| Danilo García | `Danilogb18` | Conversión, Estructuras de control | `conversion_Danilogb18`, `condicion_Danilogb18` |
-| Samuel Echeverría | `SamuelEcheverria` | Identificadores, Operaciones permitidas | `identificador_SamuelEcheverria`, `operacion_SamuelEcheverria` |
+No hay estructura común. Cada uno tiene sus dos reglas, una parte de la base y
+el recorrido de los nodos que armó su gramática en el avance 2:
 
-1. **Código.** En `backend/analizador/semantico.py` cada integrante completa
-   sus dos funciones dentro de su bloque `INICIO aporte` / `FIN aporte`,
-   siguiendo sus `TODO(<usuario>)`. La "Estructura común" (tabla de símbolos y
-   tipo de cada expresión, Tablas 9 y 10) ya las llama donde aplican y no les
-   pasa expresiones de tipo `error`. Los errores se reportan con
-   `az.reportar("<Regla>", nodo, mensaje, sugerencia)`. Comenten cada regla.
-2. **Algoritmos.** Su `algoritmoN.go` debe pasar el semántico sin errores.
+| Integrante | Usuario | Reglas (Tabla 11) | Base | Nodos (`sem_<Nodo>`) |
+|---|---|---|---|---|
+| Paúl Rodríguez | `AndreewCore` | Retorno de funciones, Asignación de tipo | `Analizador`, `analizar_semantico`, `visitar`, `reportar`, `nombre_tipo` | VarDecl, FuncDecl, MethodDecl, ReturnStmt, CallExpr, IndexExpr, SelectorExpr, MapLit |
+| Danilo García | `Danilogb18` | Conversión, Estructuras de control | Tipos de la Tabla 9 (`tipo_literal`, `tupla`, `tipo_elemento`, `tipo_clave`) | AssignStmt, ShortVarDecl, IncDecStmt, ForStmt, CompositeLit, UnaryExpr, BasicLit |
+| Samuel Echeverría | `SamuelEcheverria` | Identificadores, Operaciones permitidas | Tabla de símbolos de la Tabla 10 (`Ambito`, `abrir`, `cerrar`, `declarar`, `buscar`) | ImportDecl, Ident, ParenExpr, ConstDecl, ArrayLit, IfStmt, SwitchStmt, Block, BinaryExpr |
+
+1. **Código.** En `backend/analizador/semantico.py` cada integrante escribe
+   solo dentro de su bloque `INICIO aporte` / `FIN aporte`, siguiendo sus
+   `TODO(<usuario>)`. Cada función dice en su docstring la forma del nodo que
+   recibe. No cambien la firma de las funciones que usan los demás (están
+   listadas al inicio del archivo). Comenten cada regla.
+2. **Orden.** Primero la base de cada uno, en un PR pequeño: sin `visitar`,
+   la tabla de símbolos y los tipos no se puede probar nada. Después, los
+   nodos y las reglas. Un nodo sin su función `sem_` se ignora, así que cada
+   uno puede probar lo suyo sin esperar los nodos de los demás.
+3. **Algoritmos.** Su `algoritmoN.go` debe pasar el semántico sin errores.
    Agreguen una versión con errores por regla (`algoritmoN_errorsem1.go`,
    `algoritmoN_errorsem2.go`).
-3. **Logs.** Cada prueba genera un log en `backend/logs/`:
+4. **Logs.** Cada prueba genera un log en `backend/logs/`:
 
    ```bash
    cd backend
@@ -139,7 +145,7 @@ queda fuera está en "No considerado", al inicio de `semantico.py`.
    # -> logs/semantico-Danilogb18-20-11-2026-14h32.txt
    ```
 
-4. **Commit.** Incluir los logs (`git add backend/logs/`) y abrir el PR hacia
+5. **Commit.** Incluir los logs (`git add backend/logs/`) y abrir el PR hacia
    `feature/semantico`.
 
 En `feature/semantico`, `test_ejemplos.py` falla en `suma`, `paridad` y
