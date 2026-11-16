@@ -104,6 +104,47 @@ aportes, porque los ejemplos usan reglas de todos. Para ver los conflictos de
 la gramática: `GOTUTOR_DEBUG_YACC=1 python probar_sintactico.py <archivo>`,
 que deja `analizador/parser.out` (no se sube).
 
+## Avance 3: analizador semántico
+
+La rama de la fase es `feature/semantico`:
+
+```bash
+git fetch
+git switch -c feature/semantico-<usuario> origin/feature/semantico
+```
+
+Solo se implementan las reglas semánticas de la Tabla 11 del documento. Lo que
+queda fuera está en "No considerado", al inicio de `semantico.py`.
+
+| Integrante | Usuario | Reglas semánticas (Tabla 11) | Funciones |
+|---|---|---|---|
+| Paúl Rodríguez | `AndreewCore` | Retorno de funciones, Asignación de tipo | `retorno_AndreewCore`, `asignacion_AndreewCore` |
+| Danilo García | `Danilogb18` | Conversión, Estructuras de control | `conversion_Danilogb18`, `condicion_Danilogb18` |
+| Samuel Echeverría | `SamuelEcheverria` | Identificadores, Operaciones permitidas | `identificador_SamuelEcheverria`, `operacion_SamuelEcheverria` |
+
+1. **Código.** En `backend/analizador/semantico.py` cada integrante completa
+   sus dos funciones dentro de su bloque `INICIO aporte` / `FIN aporte`,
+   siguiendo sus `TODO(<usuario>)`. La "Estructura común" (tabla de símbolos y
+   tipo de cada expresión, Tablas 9 y 10) ya las llama donde aplican y no les
+   pasa expresiones de tipo `error`. Los errores se reportan con
+   `az.reportar("<Regla>", nodo, mensaje, sugerencia)`. Comenten cada regla.
+2. **Algoritmos.** Su `algoritmoN.go` debe pasar el semántico sin errores.
+   Agreguen una versión con errores por regla (`algoritmoN_errorsem1.go`,
+   `algoritmoN_errorsem2.go`).
+3. **Logs.** Cada prueba genera un log en `backend/logs/`:
+
+   ```bash
+   cd backend
+   python probar_semantico.py ../algoritmos/algoritmo2_errorsem1.go -u Danilogb18
+   # -> logs/semantico-Danilogb18-20-11-2026-14h32.txt
+   ```
+
+4. **Commit.** Incluir los logs (`git add backend/logs/`) y abrir el PR hacia
+   `feature/semantico`.
+
+En `feature/semantico`, `test_ejemplos.py` falla en `suma`, `paridad` y
+`ambitos` hasta que estén las seis reglas: cada ejemplo usa reglas de varios.
+
 ## Implementar las fases
 
 Solo se editan los tres archivos de `backend/analizador/`. Cada uno trae
