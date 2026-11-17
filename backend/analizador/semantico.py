@@ -623,7 +623,7 @@ def sem_ArrayLit(az: Analizador, n: Nodo) -> str:
     for elem in n.hijos[1:]:
         tipo_item = visitar(az, elem)
         if tipo_item != ERROR and tipo_elem != ERROR:
-            asignar(az, tipo_elem, tipo_item, elem, f"elemento de arreglo '{n.dato}'")
+            asignar(az, elem, n.dato, tipo_elem, tipo_item)
     return n.dato
 
 
@@ -722,7 +722,7 @@ def sem_BinaryExpr(az: Analizador, n: Nodo) -> str:
     if op in ("==", "!=", "<", ">", "<=", ">="):
         if op in ("<", ">", "<=", ">="):
             if izq not in ("int", "float64", "string") or izq != der:
-                if conversion(az, izq, der, n, f"comparación '{op}'"):
+                if conversion(az, n, izq, der):
                     return ERROR
                 reportar(
                     az,
@@ -734,7 +734,7 @@ def sem_BinaryExpr(az: Analizador, n: Nodo) -> str:
                 return ERROR
         else:
             if izq != der:
-                if conversion(az, izq, der, n, f"comparación '{op}'"):
+                if conversion(az, n, izq, der):
                     return ERROR
                 reportar(
                     az,
@@ -748,7 +748,7 @@ def sem_BinaryExpr(az: Analizador, n: Nodo) -> str:
 
     # 3. Operadores aritméticos (+, -, *, /, %)
     # Primero detectamos si es un intento de conversión implícita entre int y float64
-    if conversion(az, izq, der, n, f"operación '{op}'"):
+    if conversion(az, n, izq, der):
         return ERROR
 
     if op == "+":
