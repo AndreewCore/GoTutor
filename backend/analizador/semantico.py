@@ -128,9 +128,19 @@ def asignar(az: Analizador, nodo: Nodo, nombre: str, esperado: str, recibido: st
     Se salta si alguno es ERROR. Primero `conversion` (para que int→float64
     dé un solo mensaje, el de Conversión) y, si no reportó, Asignación de tipo.
     """
-    # TODO(AndreewCore): regla Asignación de tipo, p. ej.:
-    #   reportar(az, "Asignación de tipo", nodo, f"No se puede asignar un valor de tipo "
-    #            f"'{recibido}' a la variable '{nombre}' de tipo '{esperado}'.", "...", texto=nombre)
+    # Un ERROR ya se reportó o no se modela: revisarlo daría un mensaje en cascada.
+    if ERROR in (esperado, recibido):
+        return
+    if conversion(az, nodo, esperado, recibido):
+        return
+    # Regla semántica (Tabla 11) — Asignación de tipo: el tipo del valor debe
+    # coincidir exactamente con el de la variable.
+    if esperado != recibido:
+        reportar(az, "Asignación de tipo", nodo,
+                 f"No se puede asignar un valor de tipo '{recibido}' a la variable "
+                 f"'{nombre}' de tipo '{esperado}'.",
+                 f"Asigna un valor de tipo '{esperado}' o declara '{nombre}' con otro tipo.",
+                 texto=nombre)
 
 
 def sem_VarDecl(az: Analizador, n: Nodo) -> None:
@@ -138,7 +148,43 @@ def sem_VarDecl(az: Analizador, n: Nodo) -> None:
 
     El tipo es un nodo Type o MapType. Con tipo y valor, llama a `asignar`.
     """
-    # TODO(AndreewCore)
+    tiene_tipo = n.hijos[0].tipo in ("Type", "MapType")
+    esperado = nombre_tipo(n.hijos[0]) if tiene_tipo else None
+    valor = n.hijos[-1] if not tiene_tipo or len(n.hijos) == 2 else None
+    # El valor se revisa antes de declarar: en `var x = x` la x de la derecha es la de afuera.
+    recibido = visitar(az, valor) if valor else None
+    if esperado and recibido:
+        asignar(az, n, n.dato, esperado, recibido)
+    # Sin tipo, Go lo deduce del valor.
+    declarar(az, n.dato, esperado or recibido, "Variable", n.linea)
+
+
+def _parametros(n: Nodo) -> list[Nodo]:
+    """Los Param de una función o método, estén sueltos o dentro de un nodo Params."""
+    return [p for h in n.hijos for p in (h.hijos if h.tipo == "Params" else [h]) if p.tipo == "Param"]
+
+
+def _resultados(n: Nodo) -> list[str]:
+    """Los tipos de retorno (hijo Results); [] si la función no devuelve nada."""
+    return next(([nombre_tipo(t) for t in h.hijos] for h in n.hijos if h.tipo == "Results"), [])
+
+
+def _recorrer_funcion(az: Analizador, n: Nodo, resultados: list[str]) -> None:
+    """Revisa el cuerpo de una función o método en su ámbito, con sus parámetros declarados."""
+    anterior = az.funcion
+    az.funcion = (n.dato, resultados)
+    abrir(az, n.dato)
+    for h in n.hijos:
+        if h.tipo == "Receiver":
+            declarar(az, h.dato, h.hijos[0].dato, "Parámetro", h.linea)
+    for p in _parametros(n):
+        declarar(az, p.dato, nombre_tipo(p.hijos[0]), "Parámetro", p.linea)
+    # El cuerpo comparte el ámbito con los parámetros, como en Go.
+    for sentencia in n.hijos[-1].hijos:
+        visitar(az, sentencia)
+    cerrar(az)
+    # Se restaura por las funciones anidadas, que la gramática acepta.
+    az.funcion = anterior
 
 
 def sem_FuncDecl(az: Analizador, n: Nodo) -> None:
@@ -147,19 +193,41 @@ def sem_FuncDecl(az: Analizador, n: Nodo) -> None:
     dato = nombre. hijos: los Param (sueltos o dentro de un nodo Params), un
     Results opcional con los tipos de retorno y el Block del cuerpo al final.
     """
-    # TODO(AndreewCore)
+    resultados = _resultados(n)
+    firma = f"func({', '.join(nombre_tipo(p.hijos[0]) for p in _parametros(n))})"
+    if resultados:
+        firma += " " + tupla(resultados)
+    # Se declara antes del cuerpo para que la función pueda llamarse a sí misma.
+    declarar(az, n.dato, firma, "Función", n.linea)
+    az.firmas[n.dato] = resultados
+    _recorrer_funcion(az, n, resultados)
 
 
 def sem_MethodDecl(az: Analizador, n: Nodo) -> None:
     """Como FuncDecl, con hijos [Receiver, Param..., Results?, Block]; Receiver(dato = nombre, [Type])."""
-    # TODO(AndreewCore)
+    # El método no va a la tabla: `ana.Mostrar()` no se revisa (structs no considerados).
+    _recorrer_funcion(az, n, _resultados(n))
 
 
 def sem_ReturnStmt(az: Analizador, n: Nodo) -> None:
     """`return v1, v2`; hijos = valores. Regla Retorno de funciones."""
-    # TODO(AndreewCore): comparar con los tipos de retorno de la función actual, p. ej.:
-    #   reportar(az, "Retorno de funciones", n, f"Tipo de retorno inválido en la función "
-    #            f"'{funcion}'; se esperaba 'float64' pero se retornó 'int'.", "...", texto="return")
+    recibidos = [visitar(az, h) for h in n.hijos]
+    if az.funcion is None or ERROR in recibidos:
+        return
+    nombre, esperados = az.funcion
+    # `return g()` con g de varios retornos llega como una sola tupla "(T1, T2)".
+    if recibidos == esperados or (len(recibidos) == 1 and recibidos[0] == tupla(esperados)):
+        return
+    # Regla semántica (Tabla 11) — Retorno de funciones: el return debe coincidir
+    # con la firma; en una función sin tipo de retorno no lleva valores.
+    if not esperados:
+        mensaje = f"La función '{nombre}' no tiene tipo de retorno; el return no debe llevar valores."
+        sugerencia = "Quita los valores del return o agrega el tipo de retorno a la firma."
+    else:
+        mensaje = (f"Tipo de retorno inválido en la función '{nombre}'; se esperaba "
+                   f"'{tupla(esperados)}' pero se retornó '{tupla(recibidos)}'.")
+        sugerencia = f"Devuelve un valor de tipo '{tupla(esperados)}' o cambia la firma de '{nombre}'."
+    reportar(az, "Retorno de funciones", n, mensaje, sugerencia, texto="return")
 
 
 def sem_CallExpr(az: Analizador, n: Nodo) -> str:
@@ -168,26 +236,36 @@ def sem_CallExpr(az: Analizador, n: Nodo) -> str:
     Devuelve el tipo de retorno de f: T, una tupla "(T1, T2)" o SIN_VALOR.
     Con prefijo (fmt.Println, ana.Mostrar) devuelve ERROR.
     """
-    # TODO(AndreewCore)
-    return ERROR
+    # Los argumentos se visitan para revisar lo que usan, no contra los parámetros.
+    for argumento in n.hijos:
+        visitar(az, argumento)
+    if "." in n.dato:
+        identificador(az, n.dato.split(".")[0], n)
+        return ERROR
+    if identificador(az, n.dato, n) is None or n.dato not in az.firmas:
+        return ERROR
+    return tupla(az.firmas[n.dato])
 
 
 def sem_IndexExpr(az: Analizador, n: Nodo) -> str:
     """`c[i]`; dato = nombre de la colección, hijos [índice]. Devuelve el tipo del elemento."""
-    # TODO(AndreewCore)
-    return ERROR
+    coleccion = identificador(az, n.dato, n)
+    visitar(az, n.hijos[0])
+    return tipo_elemento(coleccion.tipo) if coleccion else ERROR
 
 
 def sem_SelectorExpr(az: Analizador, n: Nodo) -> str:
     """`x.campo`; dato = "x.campo". Revisa que x exista; devuelve ERROR (structs no considerados)."""
-    # TODO(AndreewCore)
+    identificador(az, n.dato.split(".")[0], n)
     return ERROR
 
 
 def sem_MapLit(az: Analizador, n: Nodo) -> str:
     """`map[K]V{k: v}`; hijos [tipo K, tipo V, KeyValue([k, v])...]. Devuelve "map[K]V"."""
-    # TODO(AndreewCore)
-    return ERROR
+    for par in n.hijos[2:]:
+        visitar(az, par.hijos[0])
+        visitar(az, par.hijos[1])
+    return f"map[{nombre_tipo(n.hijos[0])}]{nombre_tipo(n.hijos[1])}"
 
 # ===== FIN aporte: Paúl Rodríguez (AndreewCore) =====
 
@@ -545,7 +623,7 @@ def sem_ArrayLit(az: Analizador, n: Nodo) -> str:
     for elem in n.hijos[1:]:
         tipo_item = visitar(az, elem)
         if tipo_item != ERROR and tipo_elem != ERROR:
-            asignar(az, tipo_elem, tipo_item, elem, f"elemento de arreglo '{n.dato}'")
+            asignar(az, elem, n.dato, tipo_elem, tipo_item)
     return n.dato
 
 
@@ -644,7 +722,7 @@ def sem_BinaryExpr(az: Analizador, n: Nodo) -> str:
     if op in ("==", "!=", "<", ">", "<=", ">="):
         if op in ("<", ">", "<=", ">="):
             if izq not in ("int", "float64", "string") or izq != der:
-                if conversion(az, izq, der, n, f"comparación '{op}'"):
+                if conversion(az, n, izq, der):
                     return ERROR
                 reportar(
                     az,
@@ -656,7 +734,7 @@ def sem_BinaryExpr(az: Analizador, n: Nodo) -> str:
                 return ERROR
         else:
             if izq != der:
-                if conversion(az, izq, der, n, f"comparación '{op}'"):
+                if conversion(az, n, izq, der):
                     return ERROR
                 reportar(
                     az,
@@ -670,7 +748,7 @@ def sem_BinaryExpr(az: Analizador, n: Nodo) -> str:
 
     # 3. Operadores aritméticos (+, -, *, /, %)
     # Primero detectamos si es un intento de conversión implícita entre int y float64
-    if conversion(az, izq, der, n, f"operación '{op}'"):
+    if conversion(az, n, izq, der):
         return ERROR
 
     if op == "+":
