@@ -1,0 +1,29 @@
+GoTutor — algoritmo2.go
+Fecha: 17/11/2026 09:55:06
+Usuario Git: Danilogb18
+
+TABLA DE SÍMBOLOS
+fmt	paquete	Paquete	global	L8	usos=9
+MINIMO	float64	Constante	global	L10	usos=2
+estadisticas	func([]float64) (float64, float64, bool)	Función	global	L13	usos=1
+notas	[]float64	Parámetro	estadisticas	L13	usos=1
+suma	float64	Variable	estadisticas	L14	usos=3
+cantidad	float64	Variable	estadisticas	L15	usos=2
+perfecta	bool	Variable	estadisticas	L16	usos=1
+nota	float64	Variable	estadisticas › for	L17	usos=2
+promedio	float64	Variable	estadisticas	L24	usos=1
+reportar	func(float64, float64, bool)	Función	global	L29	usos=1
+suma	float64	Parámetro	reportar	L29	usos=1
+promedio	float64	Parámetro	reportar	L29	usos=4
+perfecta	bool	Parámetro	reportar	L29	usos=1
+main	func()	Función	global	L40	usos=0
+nombre	string	Variable	main	L41	usos=1
+edad	int	Variable	main	L42	usos=5
+notas	[]float64	Variable	main	L43	usos=1
+faltas	[3]int	Variable	main	L44	usos=1
+creditos	map[string]int	Variable	main	L45	usos=1
+total	int	Variable	main	L52	usos=9
+i	int	Variable	main › for	L53	usos=3
+
+ERRORES
+Sin errores.

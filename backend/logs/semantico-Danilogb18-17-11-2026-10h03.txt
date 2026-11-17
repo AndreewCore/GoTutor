@@ -1,0 +1,32 @@
+GoTutor — algoritmo2_errorsem2.go
+Fecha: 17/11/2026 10:03:39
+Usuario Git: Danilogb18
+
+TABLA DE SÍMBOLOS
+fmt	paquete	Paquete	global	L18	usos=9
+MINIMO	float64	Constante	global	L20	usos=2
+estadisticas	func([]float64) (float64, float64, bool)	Función	global	L23	usos=1
+notas	[]float64	Parámetro	estadisticas	L23	usos=1
+suma	float64	Variable	estadisticas	L24	usos=3
+cantidad	float64	Variable	estadisticas	L25	usos=2
+perfecta	bool	Variable	estadisticas	L26	usos=1
+nota	float64	Variable	estadisticas › for	L27	usos=2
+promedio	float64	Variable	estadisticas	L34	usos=1
+reportar	func(float64, float64, bool)	Función	global	L39	usos=1
+suma	float64	Parámetro	reportar	L39	usos=1
+promedio	float64	Parámetro	reportar	L39	usos=4
+perfecta	bool	Parámetro	reportar	L39	usos=1
+main	func()	Función	global	L50	usos=0
+nombre	string	Variable	main	L51	usos=2
+edad	int	Variable	main	L52	usos=5
+notas	[]float64	Variable	main	L53	usos=1
+faltas	[3]int	Variable	main	L54	usos=1
+creditos	map[string]int	Variable	main	L55	usos=1
+total	int	Variable	main	L64	usos=9
+i	int	Variable	main › for	L65	usos=2
+
+ERRORES
+[30:6] [Estructuras de control] La condición de la estructura 'if' debe ser de tipo 'bool', pero se recibió 'float64'.  — Compara el valor para obtener un bool, por ejemplo: x != 0 o x > 0.
+[57:5] [Estructuras de control] La condición de la estructura 'if' debe ser de tipo 'bool', pero se recibió 'string'.  — Compara el texto para obtener un bool, por ejemplo: s != "".
+[65:14] [Estructuras de control] La condición de la estructura 'for' debe ser de tipo 'bool', pero se recibió 'int'.  — Compara el valor para obtener un bool, por ejemplo: x != 0 o x > 0.
+[80:6] [Estructuras de control] La condición de la estructura 'for' debe ser de tipo 'bool', pero se recibió 'int'.  — Compara el valor para obtener un bool, por ejemplo: x != 0 o x > 0.
