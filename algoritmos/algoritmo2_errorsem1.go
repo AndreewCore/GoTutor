@@ -8,10 +8,10 @@
 //   cd backend && python probar_semantico.py ../algoritmos/algoritmo2_errorsem1.go -u Danilogb18
 //
 // Errores esperados (regla Conversión):
-//   línea 35: suma (float64) dividida para cantidad, que ahora es un contador int
-//   línea 55: la variable int bono dentro de un slice []float64
-//   línea 73: total (int) multiplicado por factor (float64)
-//   línea 74: total (int) guardado en una variable float64
+//   línea 34: suma (float64) dividida para cantidad, que ahora es un contador int
+//   línea 54: la variable int bono dentro de un slice []float64
+//   línea 72: total (int) multiplicado por factor (float64)
+//   línea 73: total (int) guardado en una variable float64
 
 package main
 
