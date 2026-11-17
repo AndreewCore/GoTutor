@@ -198,29 +198,79 @@ def sem_MapLit(az: Analizador, n: Nodo) -> str:
 # Nodos (avance 2): AssignStmt, ShortVarDecl, IncDecStmt, ForStmt,
 #   CompositeLit, UnaryExpr, BasicLit.
 
-ERROR = "error"  # Tabla 9: expresión que no se modela o que ya falló
-SIN_VALOR = "sin valor"  # Tabla 9: llamada a una función sin retorno
 
+ERROR = "error"
+SIN_VALOR = "sin valor"  # llamada a una función sin retorno
+
+NUMERICOS = ("int", "float64")
+
+
+# --- Base: tipos de la Tabla 9 
 
 def tipo_literal(lexema: str) -> str:
     """Tipo de un literal según su lexema: "int", "float64", "string" o "bool"."""
-    # TODO(Danilogb18)
+    # El lexer deja el lexema tal cual (ENTERO y DECIMAL no se convierten a número), así que basta mirar su forma: comillas, true/false o un punto.
+    if lexema.startswith('"'):
+        return "string"
+    if lexema in ("true", "false"):
+        return "bool"
+    if "." in lexema:
+        return "float64"
+    return "int"
 
 
 def tupla(tipos: list[str]) -> str:
     """Tipo de lo que devuelve una función: T, "(T1, T2)" o SIN_VALOR si no devuelve nada."""
-    # TODO(Danilogb18)
+    # Un solo tipo no lleva paréntesis: `func f() int` devuelve "int", que se compara directo con el tipo de una variable.
+    if not tipos:
+        return SIN_VALOR
+    if len(tipos) == 1:
+        return tipos[0]
+    return "(" + ", ".join(tipos) + ")"
+
+
+def _partes_map(tipo: str) -> tuple[str, str] | None:
+    """Separa "map[K]V" en (K, V); None si `tipo` no es un map.
+    Se busca el ']' que cierra la clave contando corchetes, porque la clave o el valor pueden tener corchetes propios: "map[string][]int" -> ("string", "[]int").
+    """
+    if not tipo.startswith("map["):
+        return None
+    nivel = 0
+    for i in range(3, len(tipo)):
+        if tipo[i] == "[":
+            nivel += 1
+        elif tipo[i] == "]":
+            nivel -= 1
+            if nivel == 0:
+                return tipo[4:i], tipo[i + 1:]
+    return None
+
+
+def _es_arreglo(tipo: str) -> bool:
+    """True para "[N]T" (arreglo con tamaño); "[]T" es slice."""
+    cierre = tipo.find("]")
+    return tipo.startswith("[") and cierre > 1 and tipo[1:cierre].isdigit()
 
 
 def tipo_elemento(tipo: str) -> str:
     """Tipo de `c[i]` o del valor en `range c`: T en "[]T" y "[N]T", V en "map[K]V"; si no, ERROR."""
-    # TODO(Danilogb18)
+    if tipo.startswith("[]"):
+        return tipo[2:]
+    if _es_arreglo(tipo):
+        return tipo[tipo.find("]") + 1:]
+    partes = _partes_map(tipo)
+    return partes[1] if partes else ERROR
 
 
 def tipo_clave(tipo: str) -> str:
     """Tipo de la clave en `range c`: "int" en arreglos y slices, K en "map[K]V"; si no, ERROR."""
-    # TODO(Danilogb18)
+    if tipo.startswith("[]") or _es_arreglo(tipo):
+        return "int"  # la posición
+    partes = _partes_map(tipo)
+    return partes[0] if partes else ERROR
 
+
+# --- Regla Conversión 
 
 def conversion(az: Analizador, nodo: Nodo, esperado: str, recibido: str) -> bool:
     """Regla Conversión: int y float64 mezclados sin conversión explícita.
@@ -229,32 +279,77 @@ def conversion(az: Analizador, nodo: Nodo, esperado: str, recibido: str) -> bool
     aritméticas (los dos operandos). Devuelve True si reportó, para que no se
     reporte además Asignación u Operaciones.
     """
-    # TODO(Danilogb18), p. ej.:
-    #   reportar(az, "Conversión", nodo, "No existe conversión implícita del tipo 'int' "
-    #            "al tipo 'float64'.", "...")
-    return False
+    # Solo se dispara con la pareja int/float64. Con cualquier otro par (int y string, por ejemplo) devuelve False y decide la regla de quien llamó: Asignación de tipo u Operaciones permitidas. Si uno es ERROR, el error ya se reportó antes y no se repite.
+    if {esperado, recibido} != set(NUMERICOS):
+        return False
 
+    # La sugerencia no propone `float64(x)`: la conversión explícita no está en la gramática así que el analizador rechazaría justo lo que se le sugiere al alumno.
+    if nodo.tipo == "BinaryExpr":
+        mensaje = (f"No existe conversión implícita entre 'int' y 'float64': la operación "
+                   f"'{nodo.dato}' mezcla un operando de tipo '{esperado}' con uno de tipo '{recibido}'.")
+        sugerencia = ("Go no convierte números automáticamente: usa operandos del mismo tipo "
+                      "(por ejemplo, escribe 2.0 en vez de 2 si el otro operando es float64).")
+    else:
+        mensaje = f"No existe conversión implícita del tipo '{recibido}' al tipo '{esperado}'."
+        if esperado == "float64":
+            sugerencia = ("Usa un valor de tipo float64: escribe el literal con decimales "
+                          "(5.0 en vez de 5) o una variable declarada como float64.")
+        else:
+            sugerencia = ("Un int no puede guardar decimales: usa un valor entero "
+                          "o declara la variable como float64.")
+    reportar(az, "Conversión", nodo, mensaje, sugerencia)
+    return True
+
+
+# --- Regla Estructuras de control 
 
 def condicion(az: Analizador, nodo: Nodo, estructura: str) -> None:
     """Regla Estructuras de control: visita la condición de un if o for y exige que sea bool."""
-    # TODO(Danilogb18), p. ej.:
-    #   reportar(az, "Estructuras de control", nodo, f"La condición de la estructura "
-    #            f"'{estructura}' debe ser de tipo 'bool', pero se recibió '{tipo}'.", "...")
+    tipo = visitar(az, nodo)
+    # ERROR: la condición ya tuvo un error (p. ej. variable sin declarar) o usa algo no considerado; reportarla otra vez sería un mensaje en cascada.
+    if tipo in ("bool", ERROR, None):
+        return
+    # Go no trata los números como verdadero/falso como C o Python, la sugerencia muestra la comparación que el usuario probablemente quería.
+    if tipo in NUMERICOS:
+        sugerencia = "Compara el valor para obtener un bool, por ejemplo: x != 0 o x > 0."
+    elif tipo == "string":
+        sugerencia = 'Compara el texto para obtener un bool, por ejemplo: s != "".'
+    else:
+        sugerencia = "Usa una comparación (==, <, >...) o una variable de tipo bool."
+    reportar(az, "Estructuras de control", nodo,
+             f"La condición de la estructura '{estructura}' debe ser de tipo 'bool', "
+             f"pero se recibió '{tipo}'.", sugerencia)
 
+
+# --- Nodos de la gramática de Danilogb18 
 
 def sem_AssignStmt(az: Analizador, n: Nodo) -> None:
     """`x = v` o `x += v`; dato = operador, hijos [Ident, valor]. Con "=", llama a `asignar`."""
-    # TODO(Danilogb18)
+    ident, valor = n.hijos
+    recibido = visitar(az, valor)
+    simbolo = identificador(az, ident.dato, ident, usar=n.dato != "=")
+    if simbolo is None:
+        return
+    if n.dato == "=":
+        asignar(az, n, ident.dato, simbolo.tipo, recibido)
 
 
 def sem_ShortVarDecl(az: Analizador, n: Nodo) -> None:
     """`x := v`; hijos [Ident, valor]. Declara x con el tipo del valor (visitado antes de declarar)."""
-    # TODO(Danilogb18)
+    ident, valor = n.hijos
+    # Se visita antes de declarar para que `x := x + 1` busque la x de afuera y no la nueva, que todavía no existe (igual que en Go).
+    tipo = visitar(az, valor)
+    # `:=` es la única forma de declarar sin escribir el tipo: el tipo de x es
+    # el del valor. Si el valor es ERROR, x queda con tipo ERROR y las reglas
+    # no se aplican a sus usos (sin errores en cascada).
+    declarar(az, ident.dato, tipo or ERROR, "Variable", n.linea)
 
 
 def sem_IncDecStmt(az: Analizador, n: Nodo) -> None:
     """`x++` / `x--`; hijos [Ident]. Solo revisa que x exista."""
-    # TODO(Danilogb18)
+    ident = n.hijos[0]
+    # x++ lee x para sumarle 1, así que cuenta como uso.
+    identificador(az, ident.dato, ident)
 
 
 def sem_ForStmt(az: Analizador, n: Nodo) -> None:
@@ -264,7 +359,27 @@ def sem_ForStmt(az: Analizador, n: Nodo) -> None:
     "clásico" [ShortVarDecl, cond, post, Block],
     "range" [Ident clave, Ident valor, Ident colección, Block] (clave "_" no se declara).
     """
-    # TODO(Danilogb18)
+    abrir(az, "for")
+    if n.dato == "condicional":
+        cond, cuerpo = n.hijos
+        condicion(az, cond, "for")
+    elif n.dato == "clásico":
+        inicio, cond, paso, cuerpo = n.hijos
+        visitar(az, inicio)  # declara i antes de usarla en la condición
+        condicion(az, cond, "for")
+        visitar(az, paso)
+    elif n.dato == "range":
+        clave, valor, coleccion, cuerpo = n.hijos
+        simbolo = identificador(az, coleccion.dato, coleccion)
+        tipo = simbolo.tipo if simbolo else ERROR
+        # Arreglos y slices dan (posición int, elemento); maps, (clave, valor). Otro tipo (int, string) queda en ERROR, no está en el alcance
+        for var, tipo_var in ((clave, tipo_clave(tipo)), (valor, tipo_elemento(tipo))):
+            if var.dato != "_":  # el identificador vacío descarta el valor
+                declarar(az, var.dato, tipo_var, "Variable", var.linea)
+    else:  # "infinito"
+        cuerpo = n.hijos[0]
+    visitar(az, cuerpo)
+    cerrar(az)
 
 
 def sem_CompositeLit(az: Analizador, n: Nodo) -> str:
@@ -273,20 +388,29 @@ def sem_CompositeLit(az: Analizador, n: Nodo) -> str:
     En un struct, la clave es un campo, no una variable: solo se visita el valor.
     Devuelve dato.
     """
-    # TODO(Danilogb18)
-    return ERROR
+    if n.dato.startswith("[]"):
+        elemento = tipo_elemento(n.dato)
+        for valor in n.hijos:
+            # Cada valor se guarda en un elemento de tipo T: un 8 dentro de []float64 es el mismo int→float64 implícito que en `var x float64 = 8`.
+            conversion(az, valor, elemento, visitar(az, valor))
+        return n.dato
+    for par in n.hijos:
+        visitar(az, par.hijos[1])
+    return ERROR  # structs no considerados, sus usos no se revisan
 
 
 def sem_UnaryExpr(az: Analizador, n: Nodo) -> str:
     """`!x` (bool), `-x` (tipo de x) o `&x` (ERROR: punteros no considerados); hijos [x]."""
-    # TODO(Danilogb18)
-    return ERROR
+    tipo = visitar(az, n.hijos[0])  # también cuenta el uso de x en `&x`
+    if n.dato == "&" or tipo == ERROR:
+        return ERROR
+    return "bool" if n.dato == "!" else tipo
 
 
 def sem_BasicLit(az: Analizador, n: Nodo) -> str:
     """Literal; dato = lexema tal como se escribió."""
-    # TODO(Danilogb18)
-    return ERROR
+    return tipo_literal(n.dato)
+
 
 # ===== FIN aporte: Danilo García (Danilogb18) =====
 
