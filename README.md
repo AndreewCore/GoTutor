@@ -9,7 +9,8 @@ del grupo están en [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ```
 GoTutor/
-├── algoritmos/               algoritmoN.go (válido) y algoritmoN_errorM.go (con errores) de cada integrante
+├── algoritmos/               algoritmoN.go (válido) y sus versiones con errores de cada fase
+│                             (_errorM léxico, _errorsynM sintáctico, _errorsemM semántico)
 ├── backend/                  Python 3.11+ · Flask · PLY
 │   ├── analizador/
 │   │   ├── lexico.py         análisis léxico (ply.lex)
@@ -21,6 +22,7 @@ GoTutor/
 │   ├── app.py                API Flask (POST /api/analizar)
 │   ├── probar_lexico.py      corre solo el léxico sobre un .go y deja su log
 │   ├── probar_sintactico.py  corre el sintáctico sobre un .go y deja su log
+│   ├── probar_semantico.py   corre el semántico sobre un .go y deja su log
 │   ├── logs/                 logs generados en cada análisis
 │   └── tests/                pruebas de la integración
 └── frontend/                 Vite + JavaScript sin framework (pnpm)
@@ -76,6 +78,10 @@ se desactivan porque `lexico.py` ya tiene reglas.
 En el avance 2 lo esperado es `OK (skipped=11)`: los 4 casos de
 `test_ejemplos.py` que llegan al semántico y los 7 de `test_integracion_ply.py`.
 
+En el avance 3 las tres fases están implementadas y lo esperado es
+`OK (skipped=7)`: todos los casos de `test_ejemplos.py` pasan y solo se omiten
+los 7 de `test_integracion_ply.py`.
+
 ## Avance 1: analizador léxico
 
 **Estado: completo.** El analizador léxico (`backend/analizador/lexico.py`,
@@ -101,9 +107,7 @@ python probar_lexico.py ../algoritmos/algoritmo3_error1.go -u SamuelEcheverria
 El analizador sintáctico (`backend/analizador/sintactico.py`, con `ply.yacc`)
 construye el árbol que se dibuja en la interfaz y reporta cada error de
 sintaxis con línea, columna, un mensaje en español y una sugerencia. Tras un
-error sigue analizando, así que un programa puede mostrar varios errores. El
-semántico corresponde al avance 3, así que en la interfaz sale como "Función
-no implementada".
+error sigue analizando, así que un programa puede mostrar varios errores.
 
 Las reglas salen de la Tabla 11 del documento del proyecto más un reparto
 extra del avance 2 (detalle en [CONTRIBUTING.md](CONTRIBUTING.md)):
@@ -129,6 +133,55 @@ automática de `;` (el `;` es opcional y los saltos de línea se ignoran), y
 quedan fuera la conversión explícita `float64(x)`, la asignación a un índice
 (`m["a"] += 1`) y la declaración múltiple (`a, b := f()`).
 
+## Avance 3: analizador semántico
+
+**Estado: completo.** El analizador semántico (`backend/analizador/semantico.py`)
+recorre el árbol del sintáctico, llena la tabla de símbolos con sus ámbitos
+(global, función, `if`, `for`…) y aplica las seis reglas semánticas de la
+Tabla 11 del documento. Solo corre si el léxico y el sintáctico terminaron sin
+errores. Cada error dice la regla que lo detectó, por ejemplo
+`[Asignación de tipo] No se puede asignar un valor de tipo 'int' a la variable 'curso' de tipo 'string'.`,
+con línea, columna y una sugerencia, y el nodo del árbol queda marcado en rojo.
+
+| Integrante | Usuario | Reglas semánticas | Algoritmos de prueba |
+|---|---|---|---|
+| Paúl Rodríguez | `AndreewCore` | Retorno de funciones, Asignación de tipo | `algoritmo1.go`, `algoritmo1_errorsem1.go`, `algoritmo1_errorsem2.go` |
+| Danilo García | `Danilogb18` | Conversión, Estructuras de control | `algoritmo2.go`, `algoritmo2_errorsem1.go`, `algoritmo2_errorsem2.go` |
+| Samuel Echeverría | `SamuelEcheverria` | Identificadores, Operaciones permitidas | `algoritmo3.go`, `algoritmo3_errorsem1.go`, `algoritmo3_errorsem2.go` |
+
+Qué revisa cada regla:
+
+- **Identificadores**: toda variable, constante o función que se usa está
+  declarada en el ámbito actual o en uno que lo contiene.
+- **Operaciones permitidas**: los operandos son de un tipo válido para el
+  operador (`+` suma números del mismo tipo o concatena `string`, `%` solo con
+  `int`, `&&` y `||` solo con `bool`), y el valor de cada `case` tiene el tipo
+  del `switch`.
+- **Conversión**: Go no convierte `int` a `float64` (ni al revés) de forma
+  implícita, ni en una operación ni al asignar.
+- **Estructuras de control**: la condición de un `if` o un `for` es `bool`.
+- **Asignación de tipo**: el valor que se asigna tiene el mismo tipo que la
+  variable.
+- **Retorno de funciones**: cada `return` devuelve la cantidad y los tipos de
+  la firma, y una función sin tipo de retorno no devuelve valores.
+
+El programa válido de cada integrante pasa el semántico sin errores, y cada
+versión con errores tiene uno o más errores de una de sus reglas. Los logs
+están en `backend/logs/` (`semantico-<usuario>-<fecha>-<hora>.txt`), con la
+tabla de símbolos y los errores. Para reproducir uno:
+
+```bash
+cd backend
+python probar_semantico.py ../algoritmos/algoritmo2_errorsem2.go -u Danilogb18
+```
+
+Lo que no se considera está listado al inicio de `semantico.py`. Entre otras
+cosas, no se revisan los structs y sus métodos, las llamadas a paquetes
+(`fmt.Println`), los argumentos contra los parámetros de una función ni las
+variables declaradas y nunca usadas. Para no dar errores en cascada, una
+expresión que tuvo un error o que usa algo no considerado tiene el tipo
+`error`, y las reglas no se aplican sobre ella.
+
 ## Logs
 
 Cada análisis escribe en `backend/logs/` un archivo por cada fase que se ejecutó:
@@ -144,7 +197,8 @@ archivo, separados por una línea de `=`, en vez de sobrescribirlo.
 
 El usuario se toma de `git config user.name` (sin tildes ni espacios). Para
 usar otro nombre: `GOTUTOR_USUARIO_GIT=MiUsuario python app.py`, o
-`-u MiUsuario` en `probar_lexico.py`.
+`-u MiUsuario` en `probar_lexico.py`, `probar_sintactico.py` o
+`probar_semantico.py`.
 
 ## Contrato de la API
 
