@@ -1,0 +1,35 @@
+GoTutor — algoritmo2_errorsem1.go
+Fecha: 17/11/2026 09:56:43
+Usuario Git: Danilogb18
+
+TABLA DE SÍMBOLOS
+fmt	paquete	Paquete	global	L18	usos=10
+MINIMO	float64	Constante	global	L20	usos=2
+estadisticas	func([]float64) (float64, float64, bool)	Función	global	L23	usos=1
+notas	[]float64	Parámetro	estadisticas	L23	usos=1
+suma	float64	Variable	estadisticas	L24	usos=3
+cantidad	int	Variable	estadisticas	L25	usos=2
+perfecta	bool	Variable	estadisticas	L26	usos=1
+nota	float64	Variable	estadisticas › for	L27	usos=2
+promedio	error	Variable	estadisticas	L34	usos=1
+reportar	func(float64, float64, bool)	Función	global	L39	usos=1
+suma	float64	Parámetro	reportar	L39	usos=1
+promedio	float64	Parámetro	reportar	L39	usos=4
+perfecta	bool	Parámetro	reportar	L39	usos=1
+main	func()	Función	global	L50	usos=0
+nombre	string	Variable	main	L51	usos=1
+edad	int	Variable	main	L52	usos=5
+bono	int	Variable	main	L53	usos=1
+notas	[]float64	Variable	main	L54	usos=1
+faltas	[3]int	Variable	main	L55	usos=1
+creditos	map[string]int	Variable	main	L56	usos=1
+total	int	Variable	main	L63	usos=11
+i	int	Variable	main › for	L64	usos=3
+factor	float64	Variable	main	L71	usos=1
+promedioFaltas	float64	Variable	main	L73	usos=1
+
+ERRORES
+[34:19] [Conversión] No existe conversión implícita entre 'int' y 'float64': la operación '/' mezcla un operando de tipo 'float64' con uno de tipo 'int'.  — Go no convierte números automáticamente: usa operandos del mismo tipo (por ejemplo, escribe 2.0 en vez de 2 si el otro operando es float64).
+[54:37] [Conversión] No existe conversión implícita del tipo 'int' al tipo 'float64'.  — Usa un valor de tipo float64: escribe el literal con decimales (5.0 en vez de 5) o una variable declarada como float64.
+[72:16] [Conversión] No existe conversión implícita entre 'int' y 'float64': la operación '*' mezcla un operando de tipo 'int' con uno de tipo 'float64'.  — Go no convierte números automáticamente: usa operandos del mismo tipo (por ejemplo, escribe 2.0 en vez de 2 si el otro operando es float64).
+[73:6] [Conversión] No existe conversión implícita del tipo 'int' al tipo 'float64'.  — Usa un valor de tipo float64: escribe el literal con decimales (5.0 en vez de 5) o una variable declarada como float64.
