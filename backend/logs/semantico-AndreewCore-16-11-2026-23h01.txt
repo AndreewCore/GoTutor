@@ -1,0 +1,68 @@
+GoTutor — algoritmo1.go
+Fecha: 16/11/2026 23:01:17
+Usuario Git: AndreewCore
+
+TABLA DE SÍMBOLOS
+fmt	paquete	Paquete	global	L16	usos=8
+e	Estudiante	Parámetro	Mostrar	L23	usos=2
+e	Estudiante	Parámetro	Nombre	L27	usos=1
+notaDe	func(map[string]float64, string) float64	Función	global	L31	usos=1
+notas	map[string]float64	Parámetro	notaDe	L31	usos=1
+nombre	string	Parámetro	notaDe	L31	usos=1
+main	func()	Función	global	L35	usos=0
+curso	string	Variable	main	L36	usos=1
+edad	int	Variable	main	L37	usos=1
+activo	bool	Variable	main	L38	usos=1
+notas	map[string]float64	Variable	main	L39	usos=2
+ana	Estudiante	Variable	main	L40	usos=2
+
+ERRORES
+Sin errores.
+
+========================================================================
+
+GoTutor — algoritmo1_errorsem1.go
+Fecha: 16/11/2026 23:01:18
+Usuario Git: AndreewCore
+
+TABLA DE SÍMBOLOS
+fmt	paquete	Paquete	global	L10	usos=8
+e	Estudiante	Parámetro	Mostrar	L17	usos=2
+e	Estudiante	Parámetro	Nombre	L22	usos=1
+notaDe	func(map[string]float64, string) float64	Función	global	L26	usos=1
+notas	map[string]float64	Parámetro	notaDe	L26	usos=0
+nombre	string	Parámetro	notaDe	L26	usos=1
+main	func()	Función	global	L30	usos=0
+curso	string	Variable	main	L31	usos=1
+edad	int	Variable	main	L32	usos=1
+activo	bool	Variable	main	L33	usos=1
+notas	map[string]float64	Variable	main	L34	usos=2
+ana	Estudiante	Variable	main	L35	usos=2
+
+ERRORES
+[19:2] [Retorno de funciones] La función 'Mostrar' no tiene tipo de retorno; el return no debe llevar valores.  — Quita los valores del return o agrega el tipo de retorno a la firma.
+[27:2] [Retorno de funciones] Tipo de retorno inválido en la función 'notaDe'; se esperaba 'float64' pero se retornó 'string'.  — Devuelve un valor de tipo 'float64' o cambia la firma de 'notaDe'.
+
+========================================================================
+
+GoTutor — algoritmo1_errorsem2.go
+Fecha: 16/11/2026 23:01:20
+Usuario Git: AndreewCore
+
+TABLA DE SÍMBOLOS
+fmt	paquete	Paquete	global	L10	usos=8
+e	Estudiante	Parámetro	Mostrar	L17	usos=2
+e	Estudiante	Parámetro	Nombre	L21	usos=1
+notaDe	func(map[string]float64, string) float64	Función	global	L25	usos=1
+notas	map[string]float64	Parámetro	notaDe	L25	usos=1
+nombre	string	Parámetro	notaDe	L25	usos=1
+main	func()	Función	global	L29	usos=0
+curso	string	Variable	main	L30	usos=1
+edad	int	Variable	main	L31	usos=1
+activo	bool	Variable	main	L32	usos=1
+notas	map[string]float64	Variable	main	L33	usos=2
+ana	Estudiante	Variable	main	L34	usos=2
+
+ERRORES
+[30:6] [Asignación de tipo] No se puede asignar un valor de tipo 'int' a la variable 'curso' de tipo 'string'.  — Asigna un valor de tipo 'string' o declara 'curso' con otro tipo.
+[39:2] [Asignación de tipo] No se puede asignar un valor de tipo 'string' a la variable 'edad' de tipo 'int'.  — Asigna un valor de tipo 'int' o declara 'edad' con otro tipo.

@@ -1,0 +1,12 @@
+GoTutor — algoritmo3_errorsem2.go
+Fecha: 17/11/2026 04:37:18
+Usuario Git: SamuelEcheverria
+
+TABLA DE SÍMBOLOS
+main	func()	Función	global	L6	usos=0
+mensaje	string	Variable	main	L7	usos=1
+cantidad	int	Variable	main	L8	usos=1
+resultado	string	Variable	main	L9	usos=0
+
+ERRORES
+[9:33] [Operaciones permitidas] Operación '+' inválida entre operandos de tipo 'string' y 'int' (tipos incompatibles).  — El operador '+' solo suma números del mismo tipo (int o float64) o concatena dos 'string'.

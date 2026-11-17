@@ -1,0 +1,29 @@
+GoTutor — algoritmo3.go
+Fecha: 17/11/2026 04:35:15
+Usuario Git: SamuelEcheverria
+
+TABLA DE SÍMBOLOS
+fmt	paquete	Paquete	global	L6	usos=9
+imprimirEncabezado	func()	Función	global	L9	usos=1
+calcularBruto	func([]float64, float64) float64	Función	global	L15	usos=1
+ventas	[]float64	Parámetro	calcularBruto	L15	usos=1
+meta	float64	Parámetro	calcularBruto	L15	usos=1
+bruto	float64	Variable	calcularBruto	L16	usos=3
+monto	float64	Variable	calcularBruto › for	L18	usos=2
+main	func()	Función	global	L28	usos=0
+cajero	string	Variable	main	L31	usos=1
+turno	int	Variable	main	L32	usos=5
+IMPUESTO	float64	Constante	main	L33	usos=1
+ventas	[]float64	Variable	main	L35	usos=1
+lotes	[3]int	Variable	main	L36	usos=1
+stock	map[string]int	Variable	main	L37	usos=2
+bruto	float64	Variable	main	L42	usos=4
+promedio	float64	Variable	main	L43	usos=1
+exito	bool	Variable	main	L44	usos=2
+unidades	int	Variable	main	L45	usos=11
+i	int	Variable	main › for	L47	usos=3
+recargo	float64	Variable	main	L57	usos=1
+neto	float64	Variable	main	L58	usos=2
+
+ERRORES
+Sin errores.

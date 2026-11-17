@@ -1,0 +1,11 @@
+GoTutor — algoritmo3_errorsem1.go
+Fecha: 17/11/2026 04:36:17
+Usuario Git: SamuelEcheverria
+
+TABLA DE SÍMBOLOS
+main	func()	Función	global	L6	usos=0
+total	int	Variable	main	L7	usos=1
+variableInexistente	error	Sin declarar	main	L8	usos=0
+
+ERRORES
+[8:18] [Identificadores] El identificador 'variableInexistente' no ha sido declarado en este ámbito.  — Declara 'variableInexistente' con 'var variableInexistente <tipo>' o 'variableInexistente := <valor>' antes de usarlo.
